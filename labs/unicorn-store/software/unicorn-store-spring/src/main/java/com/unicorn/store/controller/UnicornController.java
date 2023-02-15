@@ -5,6 +5,7 @@ import com.unicorn.store.model.Unicorn;
 import com.unicorn.store.service.UnicornService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -68,5 +69,15 @@ public class UnicornController {
             logger.error(errorMsg, e);
             throw new ResponseStatusException(NOT_FOUND, errorMsg, e);
         }
+    }
+
+    @GetMapping("/health")
+    ResponseEntity<String> health() {
+        return new ResponseEntity<>("Healthy!", HttpStatus.OK);
+    }
+
+    @GetMapping("/")
+    ResponseEntity<String> root() {
+        return new ResponseEntity<>("OK!", HttpStatus.OK);
     }
 }
