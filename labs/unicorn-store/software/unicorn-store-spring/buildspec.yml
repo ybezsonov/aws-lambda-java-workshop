@@ -1,0 +1,30 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+        java: corretto17
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+      - echo ECR_URI=$ECR_URI
+      - echo IMAGE_NAME=$IMAGE_NAME
+      - echo COMMIT_HASH=$COMMIT_HASH
+      - echo IMAGE_TAG=$IMAGE_TAG
+      - echo AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_URI
+  build:
+    commands:
+      - echo Build App ...
+      - mvn clean package
+      - echo Build image ...
+      - docker build -t $ECR_URI/$IMAGE_NAME:latest .
+      - docker tag $ECR_URI/$IMAGE_NAME:latest $ECR_URI/$IMAGE_NAME:$IMAGE_TAG
+      - docker images
+  post_build:
+    commands:
+      - docker push $ECR_URI/$IMAGE_NAME:$IMAGE_TAG
+      - docker push $ECR_URI/$IMAGE_NAME:latest

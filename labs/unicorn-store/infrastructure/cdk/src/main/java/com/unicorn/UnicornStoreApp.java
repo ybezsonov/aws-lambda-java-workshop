@@ -20,7 +20,9 @@ public class UnicornStoreApp {
 
         var unicornStoreSpring = new UnicornStoreStack(app, "UnicornStoreSpringApp", StackProps.builder()
                 .build(), infrastructureStack);
-
+                
+        var unicornStoreSpringCI = new UnicornStoreCIStack(app, "UnicornStoreSpringCI", StackProps.builder()
+                .build(), infrastructureStack);             
 
         //Add CDK-NAG checks: https://github.com/cdklabs/cdk-nag
         //Add suppression to exclude certain findings that are not needed for Workshop environment
@@ -39,11 +41,16 @@ public class UnicornStoreApp {
             new NagPackSuppression.Builder().id("AwsSolutions-SMG4").reason("Ephemeral workshop environment does not need to rotate secrets").build(),
             new NagPackSuppression.Builder().id("AwsSolutions-RDS2").reason("Workshop non-sensitive test database does not need encryption at rest").build(),
             new NagPackSuppression.Builder().id("AwsSolutions-APIG3").reason("Workshop API Gateways do not need AWS WAF assigned" ).build(),
-            new NagPackSuppression.Builder().id("AwsSolutions-RDS13").reason("Workshop Database does not need backups" ).build()
+            new NagPackSuppression.Builder().id("AwsSolutions-RDS13").reason("Workshop Database does not need backups" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-CB3").reason("CodeBuild uses privileged mode to build docker images" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-CB4").reason("CodeBuild uses default AWS-managed CMK for S3" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-S1").reason("CodePipeline uses S3 to store temporary artefacts" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-IAM5").reason("CodeBuild uses default permissions for PipelineProject" ).build()
         );
 
         NagSuppressions.addStackSuppressions(infrastructureStack, suppression);
         NagSuppressions.addStackSuppressions(unicornStoreSpring, suppression);
+        NagSuppressions.addStackSuppressions(unicornStoreSpringCI, suppression);
 
         app.synth();
     }
