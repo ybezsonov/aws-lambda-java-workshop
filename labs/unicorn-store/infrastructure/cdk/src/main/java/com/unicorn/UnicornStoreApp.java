@@ -57,7 +57,8 @@ public class UnicornStoreApp {
             new NagPackSuppression.Builder().id("AwsSolutions-IAM5").reason("CodeBuild uses default permissions for PipelineProject" ).build(),
             new NagPackSuppression.Builder().id("AwsSolutions-ELB2").reason("Workshop environment does not need ELB access logs" ).build(),
             new NagPackSuppression.Builder().id("AwsSolutions-EC23").reason("ELB is accessible from the Internet to allow application testing" ).build(),
-            new NagPackSuppression.Builder().id("AwsSolutions-ECS2").reason("Application need environment variables to accees workshop DB" ).build()
+            new NagPackSuppression.Builder().id("AwsSolutions-ECS2").reason("Application need environment variables to accees workshop DB" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-IAM4").reason("Managed policy used as example how to access XRay and CloudWatch" ).build()
         );
 
         NagSuppressions.addStackSuppressions(unicornStoreSpringCI, suppressionCICD);

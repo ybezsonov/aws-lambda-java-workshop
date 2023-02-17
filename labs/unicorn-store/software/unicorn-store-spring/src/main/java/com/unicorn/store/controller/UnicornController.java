@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import io.opentelemetry.instrumentation.annotations.WithSpan;
+
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -23,6 +25,7 @@ public class UnicornController {
         this.unicornService = unicornService;
     }
 
+    @WithSpan("Create Unicorn")
     @PostMapping("/unicorns")
     public ResponseEntity<Unicorn> createUnicorn(@RequestBody Unicorn unicorn) {
         try {
@@ -35,6 +38,7 @@ public class UnicornController {
         }
     }
 
+    @WithSpan("Update Unicorn")
     @PutMapping("/unicorns/{unicornId}")
     public ResponseEntity<Unicorn> updateUnicorn(@RequestBody Unicorn unicorn, @PathVariable String unicornId) {
         try {
@@ -47,6 +51,7 @@ public class UnicornController {
         }
     }
 
+    @WithSpan("Get Unicorn")
     @GetMapping("/unicorns/{unicornId}")
     public ResponseEntity<Unicorn> getUnicorn(@PathVariable String unicornId) {
         try {
@@ -59,6 +64,7 @@ public class UnicornController {
         }
     }
 
+    @WithSpan("Delete Unicorn")
     @DeleteMapping("/unicorns/{unicornId}")
     public ResponseEntity<String> deleteUnicorn(@PathVariable String unicornId) {
         try {
@@ -71,11 +77,13 @@ public class UnicornController {
         }
     }
 
+    @WithSpan("Check Health")
     @GetMapping("/health")
     ResponseEntity<String> health() {
         return new ResponseEntity<>("Healthy!", HttpStatus.OK);
     }
 
+    @WithSpan("Get APP root")
     @GetMapping("/")
     ResponseEntity<String> root() {
         return new ResponseEntity<>("OK!", HttpStatus.OK);
