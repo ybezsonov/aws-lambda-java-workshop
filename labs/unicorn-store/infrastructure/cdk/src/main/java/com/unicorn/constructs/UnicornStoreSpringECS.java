@@ -11,6 +11,8 @@ import software.amazon.awscdk.services.ecs.ContainerImage;
 import software.amazon.awscdk.services.ecs.LogDriver;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedFargateService;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedTaskImageOptions;
+import software.amazon.awscdk.services.events.targets.LogGroupProps;
+import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.codebuild.PipelineProject;
 import software.amazon.awscdk.services.codebuild.BuildSpec;
 import software.amazon.awscdk.services.codebuild.ComputeType;
@@ -50,6 +52,7 @@ public class UnicornStoreSpringECS extends Construct {
             .cpu(512)
             .desiredCount(1)
             .taskImageOptions(ApplicationLoadBalancedTaskImageOptions.builder()
+                .family(projectName)
                 .containerName(projectName)
                 .image(ContainerImage.fromRegistry(
                     infrastructureStack.getAccount()
@@ -60,9 +63,6 @@ public class UnicornStoreSpringECS extends Construct {
                     + ":latest")
                     )
                 .enableLogging(true)
-				.logDriver(LogDriver.awsLogs(AwsLogDriverProps.builder()
-					.streamPrefix("ecs/" + projectName)
-					.build()))
                 .environment(Map.of(
                     "SPRING_DATASOURCE_PASSWORD", infrastructureStack.getDatabaseSecretString(),
                     "SPRING_DATASOURCE_URL", infrastructureStack.getDatabaseJDBCConnectionString(),
