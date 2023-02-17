@@ -5,18 +5,12 @@ import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
+import software.amazon.awscdk.services.ecs.AwsLogDriverProps;
 import software.amazon.awscdk.services.ecs.Cluster;
 import software.amazon.awscdk.services.ecs.ContainerImage;
-import software.amazon.awscdk.services.ecs.PortMapping;
+import software.amazon.awscdk.services.ecs.LogDriver;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedFargateService;
 import software.amazon.awscdk.services.ecs.patterns.ApplicationLoadBalancedTaskImageOptions;
-import software.constructs.Construct;
-
-import java.util.List;
-import java.util.Map;
-
-import software.amazon.awscdk.Duration;
-import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.codebuild.PipelineProject;
 import software.amazon.awscdk.services.codebuild.BuildSpec;
 import software.amazon.awscdk.services.codebuild.ComputeType;
@@ -26,33 +20,37 @@ import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariable;
 import software.amazon.awscdk.services.codepipeline.Pipeline;
 import software.amazon.awscdk.services.codepipeline.Artifact;
 import software.amazon.awscdk.services.codepipeline.StageProps;
-import software.amazon.awscdk.services.codepipeline.actions.CodeCommitSourceAction;
 import software.amazon.awscdk.services.codepipeline.actions.CodeBuildAction;
-import software.amazon.awscdk.services.codepipeline.actions.CodeCommitTrigger;
 import software.amazon.awscdk.services.codepipeline.actions.EcrSourceAction;
 import software.amazon.awscdk.services.codepipeline.actions.EcsDeployAction;
-import software.amazon.awscdk.services.ec2.Peer;
-import software.amazon.awscdk.services.ec2.Port;
-import software.amazon.awscdk.services.ec2.Protocol;
-import software.amazon.awscdk.services.ec2.SecurityGroup;
+
+import software.amazon.awscdk.Duration;
+import software.constructs.Construct;
+
+import java.util.List;
+import java.util.Map;
 
 public class UnicornStoreSpringECS extends Construct {
 
     public UnicornStoreSpringECS(final Construct scope, final String id, InfrastructureStack infrastructureStack) {
         super(scope, id);
         final String projectName = "unicorn-store-spring";
-        
-        Cluster cluster = Cluster.Builder.create(this, 
-                projectName + "-cluster").vpc(infrastructureStack.getVpc()).build();
-        
-        ApplicationLoadBalancedFargateService loadBalancedFargateService = 
-            ApplicationLoadBalancedFargateService.Builder.create(this, projectName + "-ecs")
+
+        Cluster cluster = Cluster.Builder.create(scope, projectName + "-cluster")
+                .clusterName(projectName)
+                .vpc(infrastructureStack.getVpc())
+                .containerInsights(true)
+                .build();
+
+        ApplicationLoadBalancedFargateService loadBalancedFargateService =
+            ApplicationLoadBalancedFargateService.Builder.create(scope, projectName + "-ecs")
             .cluster(cluster)
-            .serviceName(projectName + "-service")
+            .serviceName(projectName)
             .memoryLimitMiB(1024)
-            .desiredCount(1)
             .cpu(512)
+            .desiredCount(1)
             .taskImageOptions(ApplicationLoadBalancedTaskImageOptions.builder()
+                .containerName(projectName)
                 .image(ContainerImage.fromRegistry(
                     infrastructureStack.getAccount()
                     + ".dkr.ecr."
@@ -61,71 +59,49 @@ public class UnicornStoreSpringECS extends Construct {
                     + projectName
                     + ":latest")
                     )
-                .containerName(projectName)
+                .enableLogging(true)
+				.logDriver(LogDriver.awsLogs(AwsLogDriverProps.builder()
+					.streamPrefix("ecs/" + projectName)
+					.build()))
                 .environment(Map.of(
                     "SPRING_DATASOURCE_PASSWORD", infrastructureStack.getDatabaseSecretString(),
                     "SPRING_DATASOURCE_URL", infrastructureStack.getDatabaseJDBCConnectionString(),
                     "SPRING_DATASOURCE_HIKARI_maximumPoolSize", "1")
                 )
                 .build())
-            .loadBalancerName(projectName + "-alb")
+            .loadBalancerName(projectName)
             .publicLoadBalancer(true)
-            .listenerPort(80)
             .build();
-            
+
         new CfnOutput(scope, "LoadBalancerURL", CfnOutputProps.builder()
             .value("http://" + loadBalancedFargateService.getLoadBalancer().getLoadBalancerDnsName())
             .build());
-            
+
         infrastructureStack.getEventBridge().grantPutEventsTo(
             loadBalancedFargateService.getTaskDefinition().getTaskRole());
 
-        loadBalancedFargateService.getTaskDefinition().findContainer(projectName).addPortMappings(
-            PortMapping.builder()
-                .containerPort(8080)
-                .hostPort(80)
-                .build());
-                
-        SecurityGroup sgAlb = SecurityGroup.Builder.create(scope, projectName +  "-alb-sg")
-            .vpc(infrastructureStack.getVpc())
-            .allowAllOutbound(true)
-            .description("ALB ECS App security group")
-            .build();
-        sgAlb.addIngressRule(Peer.anyIpv4(), Port.tcp(80), "Allow http inbound from anywhere");
-        
-        loadBalancedFargateService.getLoadBalancer().getConnections().addSecurityGroup(sgAlb);
-        
-        SecurityGroup sgApp = SecurityGroup.Builder.create(scope, projectName + "-ecs-sg")
-            .vpc(infrastructureStack.getVpc())
-            .allowAllOutbound(true)
-            .description("ECS App security group")
-            .build();
-        sgApp.addIngressRule(sgAlb, Port.tcp(80), "Allow http inbound from ALB security group");
-        
-        loadBalancedFargateService.getService().getConnections().addSecurityGroup(sgApp);
-
-        IRepository ecr = Repository.fromRepositoryName(scope, projectName + "-ecr", projectName + "-ecr");
+        IRepository ecr = Repository.fromRepositoryName(scope, projectName + "-ecr", projectName);
         ecr.grantPull(loadBalancedFargateService.getTaskDefinition().getExecutionRole());
-        
+
         // deployment construct which listens to ECR events, then deploys to the existing service.
         Artifact sourceOuput = Artifact.artifact(projectName + "-ecr-artifact");
         Artifact buildOuput = Artifact.artifact(projectName + "-ecs-artifact");
-        
+
         EcrSourceAction sourceAction = EcrSourceAction.Builder.create()
-            .actionName(projectName + "-pipeline-ecr")
+            .actionName(projectName + "-ecr")
             .repository(ecr)
             .imageTag("latest")
             .output(sourceOuput)
             .build();
-        
+
         EcsDeployAction deployAction = EcsDeployAction.Builder.create()
-            .actionName("-pipeline-deploy")
+            .actionName("-deploy")
             .input(buildOuput)
             .service(loadBalancedFargateService.getService())
             .build();
-            
+
         PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-deploy")
-            .projectName(projectName + "-codebuild-deploy")
+            .projectName(projectName + "-deploy")
             .buildSpec(BuildSpec.fromObject(Map.of(
                 "version", "0.2",
                 "phases", Map.of(
@@ -161,38 +137,37 @@ public class UnicornStoreSpringECS extends Construct {
                 )
             .timeout(Duration.minutes(60))
             .build();
-        
-        ecr.grantPull(codeBuild);
-        
+
         Pipeline.Builder.create(scope, projectName +  "-pipeline-deploy")
-            .pipelineName(projectName + "-pipeline-deploy")
+            .pipelineName(projectName + "-deploy")
             .crossAccountKeys(false)
             .stages(List.of(
                 StageProps.builder()
+                    .stageName("Source")
                     .actions(List.of(
                         sourceAction
                         )
                     )
-                    .stageName("Source")
                 .build(),
                 StageProps.builder()
+                    .stageName("Build")
                     .actions(List.of(
                         CodeBuildAction.Builder.create()
                             .actionName("CodeBuild_imagedefinitions")
                             .input(sourceOuput)
                             .project(codeBuild)
+                            .outputs(List.of(buildOuput))
                             .runOrder(1)
                             .build()
                         )
                     )
-                    .stageName("Build")
                 .build(),
                 StageProps.builder()
+                    .stageName("Deploy")
                     .actions(List.of(
                         deployAction
                         )
                     )
-                    .stageName("Deploy")
                 .build()
                 )
             )

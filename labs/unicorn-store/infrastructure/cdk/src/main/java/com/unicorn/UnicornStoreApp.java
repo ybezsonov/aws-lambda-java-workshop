@@ -20,9 +20,12 @@ public class UnicornStoreApp {
 
         var unicornStoreSpring = new UnicornStoreStack(app, "UnicornStoreSpringApp", StackProps.builder()
                 .build(), infrastructureStack);
-                
+
         var unicornStoreSpringCI = new UnicornStoreCIStack(app, "UnicornStoreSpringCI", StackProps.builder()
-                .build(), infrastructureStack);             
+                .build(), infrastructureStack);
+
+        var unicornStoreSpringECS = new UnicornStoreECSStack(app, "UnicornStoreSpringECS", StackProps.builder()
+                .build(), infrastructureStack);
 
         //Add CDK-NAG checks: https://github.com/cdklabs/cdk-nag
         //Add suppression to exclude certain findings that are not needed for Workshop environment
@@ -41,16 +44,24 @@ public class UnicornStoreApp {
             new NagPackSuppression.Builder().id("AwsSolutions-SMG4").reason("Ephemeral workshop environment does not need to rotate secrets").build(),
             new NagPackSuppression.Builder().id("AwsSolutions-RDS2").reason("Workshop non-sensitive test database does not need encryption at rest").build(),
             new NagPackSuppression.Builder().id("AwsSolutions-APIG3").reason("Workshop API Gateways do not need AWS WAF assigned" ).build(),
-            new NagPackSuppression.Builder().id("AwsSolutions-RDS13").reason("Workshop Database does not need backups" ).build(),
-            new NagPackSuppression.Builder().id("AwsSolutions-CB3").reason("CodeBuild uses privileged mode to build docker images" ).build(),
-            new NagPackSuppression.Builder().id("AwsSolutions-CB4").reason("CodeBuild uses default AWS-managed CMK for S3" ).build(),
-            new NagPackSuppression.Builder().id("AwsSolutions-S1").reason("CodePipeline uses S3 to store temporary artefacts" ).build(),
-            new NagPackSuppression.Builder().id("AwsSolutions-IAM5").reason("CodeBuild uses default permissions for PipelineProject" ).build()
+            new NagPackSuppression.Builder().id("AwsSolutions-RDS13").reason("Workshop Database does not need backups" ).build()
         );
 
         NagSuppressions.addStackSuppressions(infrastructureStack, suppression);
         NagSuppressions.addStackSuppressions(unicornStoreSpring, suppression);
-        NagSuppressions.addStackSuppressions(unicornStoreSpringCI, suppression);
+
+        var suppressionCICD = List.of(
+            new NagPackSuppression.Builder().id("AwsSolutions-CB3").reason("CodeBuild uses privileged mode to build docker images" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-CB4").reason("CodeBuild uses default AWS-managed CMK for S3" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-S1").reason("CodePipeline uses S3 to store temporary artefacts" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-IAM5").reason("CodeBuild uses default permissions for PipelineProject" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-ELB2").reason("Workshop environment does not need ELB access logs" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-EC23").reason("ELB is accessible from the Internet to allow application testing" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-ECS2").reason("Application need environment variables to accees workshop DB" ).build()
+        );
+
+        NagSuppressions.addStackSuppressions(unicornStoreSpringCI, suppressionCICD);
+        NagSuppressions.addStackSuppressions(unicornStoreSpringECS, suppressionCICD);
 
         app.synth();
     }

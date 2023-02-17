@@ -28,20 +28,20 @@ public class UnicornStoreSpringCI extends Construct {
     public UnicornStoreSpringCI(final Construct scope, final String id, InfrastructureStack infrastructureStack) {
         super(scope, id);
         final String projectName = "unicorn-store-spring";
-        
-        software.amazon.awscdk.services.codecommit.Repository codeCommit = 
+
+        software.amazon.awscdk.services.codecommit.Repository codeCommit =
             software.amazon.awscdk.services.codecommit.Repository.Builder.create(scope, projectName + "-codecommt")
-            .repositoryName(projectName + "-codecommt")
+            .repositoryName(projectName)
             .build();
         codeCommit.applyRemovalPolicy(RemovalPolicy.DESTROY);
-        
+
         new CfnOutput(scope, "CodeCommitURL", CfnOutputProps.builder()
             .value(codeCommit.getRepositoryCloneUrlHttp())
             .build());
-        
+
         Repository ecr = Repository.Builder.create(
             scope, projectName + "-ecr")
-            .repositoryName(projectName + "-ecr")
+            .repositoryName(projectName)
             .imageScanOnPush(false)
             .removalPolicy(RemovalPolicy.DESTROY)
             .build();
@@ -52,7 +52,7 @@ public class UnicornStoreSpringCI extends Construct {
         final String imageName = ecr.getRepositoryUri().split("/")[1];
 
         PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-build")
-            .projectName(projectName + "-codebuild-build")
+            .projectName(projectName + "-build")
             .buildSpec(BuildSpec.fromSourceFilename("buildspec.yml"))
             .vpc(infrastructureStack.getVpc())
             .environment(BuildEnvironment.builder()
@@ -74,16 +74,17 @@ public class UnicornStoreSpringCI extends Construct {
                 )
             .timeout(Duration.minutes(60))
             .build();
-        
+
         ecr.grantPullPush(codeBuild);
 
         Artifact sourceOuput = Artifact.artifact(projectName + "-codecommit-artifact");
-        
+
         Pipeline.Builder.create(scope, projectName +  "-pipeline-build")
-            .pipelineName(projectName + "-pipeline-build")
+            .pipelineName(projectName + "-build")
             .crossAccountKeys(false)
             .stages(List.of(
                 StageProps.builder()
+                    .stageName("Source")
                     .actions(List.of(
                         CodeCommitSourceAction.Builder.create()
                             .actionName("CodeCommit_Source")
@@ -95,9 +96,9 @@ public class UnicornStoreSpringCI extends Construct {
                             .build()
                         )
                     )
-                    .stageName("Source")
                 .build(),
                 StageProps.builder()
+                    .stageName("Build")
                     .actions(List.of(
                         CodeBuildAction.Builder.create()
                             .actionName("CodeBuild_BuildDockerImage")
@@ -107,7 +108,6 @@ public class UnicornStoreSpringCI extends Construct {
                             .build()
                         )
                     )
-                    .stageName("Build")
                 .build()
                 )
             )
