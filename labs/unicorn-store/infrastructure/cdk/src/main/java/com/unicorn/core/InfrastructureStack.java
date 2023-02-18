@@ -22,6 +22,7 @@ public class InfrastructureStack extends Stack {
         super(scope, id, props);
 
         vpc = createUnicornVpc();
+        Tags.of(vpc).add("unicorn-vpc", "true");
         databaseSecret = createDatabaseSecret();
         database = createRDSPostgresInstance(vpc, databaseSecret);
         eventBridge = createEventBus();
