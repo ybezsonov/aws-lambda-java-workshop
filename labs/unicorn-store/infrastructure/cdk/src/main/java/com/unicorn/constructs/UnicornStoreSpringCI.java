@@ -35,8 +35,11 @@ public class UnicornStoreSpringCI extends Construct {
             .build();
         codeCommit.applyRemovalPolicy(RemovalPolicy.DESTROY);
 
-        new CfnOutput(scope, "CodeCommitURL", CfnOutputProps.builder()
+        new CfnOutput(scope, "UnicornStoreCodeCommitURL", CfnOutputProps.builder()
             .value(codeCommit.getRepositoryCloneUrlHttp())
+            .build());
+        new CfnOutput(scope, "arnUnicornStoreCodeCommit", CfnOutputProps.builder()
+            .value(codeCommit.getRepositoryArn())
             .build());
 
         Repository ecr = Repository.Builder.create(
@@ -45,8 +48,14 @@ public class UnicornStoreSpringCI extends Construct {
             .imageScanOnPush(false)
             .removalPolicy(RemovalPolicy.DESTROY)
             .build();
-        new CfnOutput(scope, "ECRrepositoryURL", CfnOutputProps.builder()
+        new CfnOutput(scope, "UnicornStoreEcrRepositoryURL", CfnOutputProps.builder()
             .value(ecr.getRepositoryUri())
+            .build());
+        new CfnOutput(scope, "UnicornStoreEcrRepositoryName", CfnOutputProps.builder()
+            .value(ecr.getRepositoryName())
+            .build());
+        new CfnOutput(scope, "arnUnicornStoreEcr", CfnOutputProps.builder()
+            .value(ecr.getRepositoryArn())
             .build());
         final String ecrUri = ecr.getRepositoryUri().split("/")[0];
         final String imageName = ecr.getRepositoryUri().split("/")[1];

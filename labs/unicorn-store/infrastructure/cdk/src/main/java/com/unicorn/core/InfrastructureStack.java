@@ -22,10 +22,22 @@ public class InfrastructureStack extends Stack {
         super(scope, id, props);
 
         vpc = createUnicornVpc();
-        Tags.of(vpc).add("unicorn-vpc", "true");
+        Tags.of(vpc).add("unicorn", "true");
+        new CfnOutput(this, "arnUnicornVPC", CfnOutputProps.builder()
+                .value(vpc.getVpcArn())
+                .build());
         databaseSecret = createDatabaseSecret();
+        new CfnOutput(this, "arnUnicornStoreDbSecret", CfnOutputProps.builder()
+                .value(databaseSecret.getSecretFullArn())
+                .build());
         database = createRDSPostgresInstance(vpc, databaseSecret);
+        new CfnOutput(this, "arnUnicornInstance", CfnOutputProps.builder()
+            .value(database.getInstanceArn())
+            .build());
         eventBridge = createEventBus();
+        new CfnOutput(this, "arnUnicornEventBus", CfnOutputProps.builder()
+            .value(eventBridge.getEventBusArn())
+            .build());
         applicationSecurityGroup = new SecurityGroup(this, "ApplicationSecurityGroup",
                 SecurityGroupProps
                         .builder()

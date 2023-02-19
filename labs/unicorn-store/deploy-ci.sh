@@ -1,9 +1,9 @@
 #bin/sh
 
 pushd infrastructure/cdk
-cdk deploy UnicornStoreSpringCI --outputs-file target/output.json --require-approval never
+cdk deploy UnicornStoreSpringCI --outputs-file target/output-ci.json --require-approval never
 cd ../../../../..
-url=$(cat aws-lambda-java-workshop/labs/unicorn-store/infrastructure/cdk/target/output.json | jq -r '.UnicornStoreSpringCI.CodeCommitURL')
+url=$(cat aws-lambda-java-workshop/labs/unicorn-store/infrastructure/cdk/target/output-ci.json | jq -r '.UnicornStoreSpringCI.CodeCommitURL')
 echo "${url}"
 git clone ${url}
 cd "${url##*/}"
