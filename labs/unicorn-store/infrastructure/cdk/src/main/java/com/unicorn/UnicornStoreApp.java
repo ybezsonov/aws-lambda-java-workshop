@@ -27,6 +27,9 @@ public class UnicornStoreApp {
         var unicornStoreSpringECS = new UnicornStoreECSStack(app, "UnicornStoreSpringECS", StackProps.builder()
                 .build(), infrastructureStack);
 
+        var unicornStoreSpringEKS = new UnicornStoreEKSStack(app, "UnicornStoreSpringEKS", StackProps.builder()
+                .build(), infrastructureStack);
+
         //Add CDK-NAG checks: https://github.com/cdklabs/cdk-nag
         //Add suppression to exclude certain findings that are not needed for Workshop environment
         Aspects.of(app).add(new AwsSolutionsChecks());
@@ -58,11 +61,15 @@ public class UnicornStoreApp {
             new NagPackSuppression.Builder().id("AwsSolutions-ELB2").reason("Workshop environment does not need ELB access logs" ).build(),
             new NagPackSuppression.Builder().id("AwsSolutions-EC23").reason("ELB is accessible from the Internet to allow application testing" ).build(),
             new NagPackSuppression.Builder().id("AwsSolutions-ECS2").reason("Application need environment variables to accees workshop DB" ).build(),
-            new NagPackSuppression.Builder().id("AwsSolutions-IAM4").reason("Managed policy used as example how to access XRay and CloudWatch" ).build()
+            new NagPackSuppression.Builder().id("AwsSolutions-IAM4").reason("AWS Managed policies are acceptable for the workshop" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-IAM5").reason("Workshop environment use CDK default execution role for Kubectl Lamdas" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-L1").reason("Workshop environment use CDK default Labdas for Kubectl" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-EKS1").reason("Workshop non-sensitive EKS cluster uses public access" ).build()
         );
 
         NagSuppressions.addStackSuppressions(unicornStoreSpringCI, suppressionCICD);
         NagSuppressions.addStackSuppressions(unicornStoreSpringECS, suppressionCICD);
+        NagSuppressions.addStackSuppressions(unicornStoreSpringEKS, suppressionCICD, true);
 
         app.synth();
     }
