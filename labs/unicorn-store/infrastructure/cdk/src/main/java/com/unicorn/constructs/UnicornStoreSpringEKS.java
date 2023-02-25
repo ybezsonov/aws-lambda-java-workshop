@@ -1,451 +1,170 @@
 package com.unicorn.constructs;
 
 import com.unicorn.core.InfrastructureStack;
-import software.amazon.awscdk.CfnOutput;
-import software.amazon.awscdk.CfnOutputProps;
-import software.amazon.awscdk.services.ecr.IRepository;
-import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.eks.Cluster;
 import software.amazon.awscdk.services.eks.KubernetesVersion;
 import software.amazon.awscdk.services.eks.ClusterLoggingTypes;
+import software.amazon.awscdk.services.eks.FargateProfile;
 import software.amazon.awscdk.services.eks.FargateProfileOptions;
 import software.amazon.awscdk.services.eks.AlbControllerOptions;
 import software.amazon.awscdk.services.eks.NodegroupOptions;
 import software.amazon.awscdk.services.eks.Selector;
 import software.amazon.awscdk.services.eks.NodegroupAmiType;
-import software.amazon.awscdk.services.eks.ServiceAccount;
-import software.amazon.awscdk.services.eks.KubernetesManifest;
 import software.amazon.awscdk.services.eks.AlbControllerVersion;
-import software.amazon.awscdk.services.eks.ServiceAccountOptions;
-import software.amazon.awscdk.services.eks.AwsAuth;
 import software.amazon.awscdk.services.eks.AwsAuthMapping;
-
+import software.amazon.awscdk.services.eks.CapacityType;
+import software.amazon.awscdk.services.eks.KubernetesManifest;
 import software.amazon.awscdk.services.ec2.InstanceType;
 import software.amazon.awscdk.services.ec2.SubnetSelection;
 import software.amazon.awscdk.services.ec2.InstanceClass;
 import software.amazon.awscdk.services.ec2.InstanceSize;
 import software.amazon.awscdk.services.ec2.SubnetType;
-
-
-import software.amazon.awscdk.services.logs.LogGroup;
-import software.amazon.awscdk.RemovalPolicy;
-import software.amazon.awscdk.services.codebuild.PipelineProject;
-import software.amazon.awscdk.services.codebuild.BuildSpec;
-import software.amazon.awscdk.services.codebuild.ComputeType;
-import software.amazon.awscdk.services.codebuild.LinuxBuildImage;
-import software.amazon.awscdk.services.codebuild.BuildEnvironment;
-import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariable;
-import software.amazon.awscdk.services.codepipeline.Pipeline;
-import software.amazon.awscdk.services.codepipeline.Artifact;
-import software.amazon.awscdk.services.codepipeline.StageProps;
-import software.amazon.awscdk.services.codepipeline.actions.CodeBuildAction;
-import software.amazon.awscdk.services.codepipeline.actions.EcrSourceAction;
-import software.amazon.awscdk.services.codepipeline.actions.EcsDeployAction;
-import software.amazon.awscdk.services.iam.PolicyStatement;
-import software.amazon.awscdk.services.iam.Effect;
-import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.IRole;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.FromRoleArnOptions;
-import software.amazon.awscdk.services.iam.ServicePrincipal;
 
-import software.amazon.awscdk.Duration;
 import software.constructs.Construct;
 
 import java.util.List;
+import java.util.Arrays;
 import java.util.Map;
-import java.util.Arrays;;
 
 public class UnicornStoreSpringEKS extends Construct {
 
-    public UnicornStoreSpringEKS(final Construct scope, final String id, InfrastructureStack infrastructureStack) {
-        super(scope, id);
+        private Cluster cluster;
 
-        final String projectName = "unicorn-store-spring";
-        IRole adminRole = Role.fromRoleArn(scope, projectName + "-admin-role",
-                "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/Admin",
-                FromRoleArnOptions.builder().mutable(false)
-                .build());
+        public UnicornStoreSpringEKS(final Construct scope, final String id, InfrastructureStack infrastructureStack) {
+                super(scope, id);
 
-        // Create the EKS cluster
-        Cluster cluster = Cluster.Builder.create(scope, projectName + "-eks-cluster").clusterName(projectName)
-                .vpc(infrastructureStack.getVpc())
-                .vpcSubnets(List.of(SubnetSelection.builder().subnetType(SubnetType.PRIVATE_WITH_EGRESS).build()))
-                .clusterLogging(Arrays.asList(ClusterLoggingTypes.API,
-                        ClusterLoggingTypes.AUDIT,
-                        ClusterLoggingTypes.AUTHENTICATOR,
-                        ClusterLoggingTypes.CONTROLLER_MANAGER,
-                        ClusterLoggingTypes.SCHEDULER))
-                .version(KubernetesVersion.of("1.24"))
-                //.kubectlLayer(new KubectlV24Layer(scope, projectName + "-kubectl"))
-                .albController(AlbControllerOptions.builder()
-                        .version(AlbControllerVersion.V2_4_1)
-                        .build())
-                .defaultCapacity(0)
-                .defaultCapacityInstance(InstanceType.of(InstanceClass.M5, InstanceSize.LARGE))
-                .build();
+                final String projectName = "unicorn";
+                IRole adminRole = Role.fromRoleArn(scope, projectName + "-admin-role",
+                        "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/Admin",
+                        FromRoleArnOptions.builder().mutable(false)
+                        .build());
+                IRole workshopAdminRole = Role.fromRoleArn(scope, projectName + "-workshop-admin-role",
+                        "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/workshop-admin",
+                        FromRoleArnOptions.builder().mutable(false)
+                        .build());
 
-        AwsAuth awsAuth = AwsAuth.Builder.create(scope, projectName + "aws-auth")
-                .cluster(cluster)
-                .build();
-        awsAuth.addRoleMapping(adminRole,
-                AwsAuthMapping.builder().groups(List.of("system:masters")).build());
+                // Create the EKS cluster
+                cluster = Cluster.Builder.create(scope, projectName + "-cluster").clusterName(projectName)
+                        .clusterName(projectName + "-cluster")
+                        .vpc(infrastructureStack.getVpc())
+                        .vpcSubnets(List.of(SubnetSelection.builder().subnetType(SubnetType.PRIVATE_WITH_EGRESS).build()))
+                        .clusterLogging(Arrays.asList(ClusterLoggingTypes.API,
+                                ClusterLoggingTypes.AUDIT,
+                                ClusterLoggingTypes.AUTHENTICATOR,
+                                ClusterLoggingTypes.CONTROLLER_MANAGER,
+                                ClusterLoggingTypes.SCHEDULER))
+                        .version(KubernetesVersion.of("1.24"))
+                        //.kubectlLayer(new KubectlV24Layer(scope, projectName + "-kubectl"))
+                        .albController(AlbControllerOptions.builder()
+                                .version(AlbControllerVersion.V2_4_1)
+                                .build())
+                        .defaultCapacity(0)
+                        .defaultCapacityInstance(InstanceType.of(InstanceClass.M5, InstanceSize.LARGE))
+                        .build();
 
-        cluster.addNodegroupCapacity("managed-node-group", NodegroupOptions.builder()
-                .nodegroupName("managed-node-group")
-                .instanceTypes(List.of(new InstanceType("m5.large")))
-                .minSize(1)
-                .desiredSize(1)
-                .maxSize(4)
-                .diskSize(10)
-                .amiType(NodegroupAmiType.AL2_X86_64)
-                .build());
+                cluster.getAwsAuth().addRoleMapping(adminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
+                cluster.getAwsAuth().addRoleMapping(workshopAdminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
 
-        cluster.addFargateProfile(projectName, FargateProfileOptions.builder()
-                .selectors(List.of(Selector.builder().namespace(projectName).build()))
-                .fargateProfileName(projectName)
-                .build());
+                cluster.addNodegroupCapacity("managed-node-group", NodegroupOptions.builder()
+                        .nodegroupName("managed-node-group")
+                        .capacityType(CapacityType.ON_DEMAND)
+                        .instanceTypes(List.of(new InstanceType("m5.large")))
+                        .minSize(1)
+                        .desiredSize(1)
+                        .maxSize(4)
+                        .amiType(NodegroupAmiType.AL2_X86_64)
+                        .build());
 
-        IRepository ecr = Repository.fromRepositoryName(scope, projectName + "-ecr", projectName);
+                FargateProfile fargateProfile = cluster.addFargateProfile(projectName, FargateProfileOptions.builder()
+                        .selectors(List.of(Selector.builder().namespace(projectName + "-*").build()))
+                        .fargateProfileName(projectName + "-fargate-profile")
+                        .build());
 
-        Map<String, String> appLabel = Map.of("app", projectName);
+                // Logging for Fargate
+                // https://docs.aws.amazon.com/eks/latest/userguide/fargate-logging.html
+                PolicyStatement executionRolePolicy = PolicyStatement.Builder.create()
+                        .effect(Effect.ALLOW)
+                        //.principals(List.of(new AnyPrincipal()))
+                        .actions(List.of(
+        			"logs:CreateLogStream",
+        			"logs:CreateLogGroup",
+        			"logs:DescribeLogStreams",
+        			"logs:PutLogEvents"
+                        ))
+                        .resources(List.of("*"))
+                        .build();
 
-        Map<String, Object> namespace = Map.of(
-                "apiVersion", "v1",
-                "kind", "Namespace",
-                "metadata", Map.of("name", projectName));
+                fargateProfile.getPodExecutionRole().addToPrincipalPolicy(executionRolePolicy);
 
-        KubernetesManifest manifestNs = KubernetesManifest.Builder.create(scope, projectName + "-manifest-ns")
-                .cluster(cluster)
-                .manifest(List.of(namespace))
-                .build();
+                String newLine = System.getProperty("line.separator");
 
-        ServiceAccount serviceAccount = cluster.addServiceAccount(projectName + "-sa",
-                ServiceAccountOptions.builder()
-                .name(projectName + "-sa")
-                .namespace(projectName)
-                .build()
-                );
-        infrastructureStack.getEventBridge().grantPutEventsTo(serviceAccount);
+                Map<String, Object> namespace = Map.of(
+                        "apiVersion", "v1",
+                        "kind", "Namespace",
+                        "metadata", Map.of("name", "aws-observability",
+                                "labels", Map.of("aws-observability", "enabled")));
 
-        Map<String, Object> deployment = Map.of(
-                "apiVersion", "apps/v1",
-                "kind", "Deployment",
-                "metadata", Map.of(
-                        "name", projectName,
-                        "namespace", projectName),
-                "spec", Map.of(
-                        "replicas", 1,
-                        "selector", Map.of("matchLabels", appLabel),
-                        "template", Map.of(
-                                "metadata", Map.of("labels", appLabel),
-                                "spec", Map.of(
-                                "serviceAccountName", serviceAccount.getServiceAccountName(),
-                                "containers", List.of(Map.of(
-                                        "name", projectName,
-                                        "image", ecr.getRepositoryUri() + "/" + projectName + ":latest",
-                                        "ports", List.of(Map.of("containerPort", 80)),
-                                        "env", List.of(
-                                                Map.of("name", "SPRING_DATASOURCE_PASSWORD",
-                                                       "value", infrastructureStack.getDatabaseSecretString()),
-                                                Map.of("name", "SPRING_DATASOURCE_URL",
-                                                       "value", infrastructureStack.getDatabaseJDBCConnectionString()),
-                                                Map.of("name", "SPRING_DATASOURCE_HIKARI_maximumPoolSize",
-                                                       "value", "1")
-                                                )))))));
+                Map<String, Object> configMap = Map.of(
+                        "apiVersion", "v1",
+                        "kind", "ConfigMap",
+                        "metadata", Map.of(
+                                "name", "aws-logging",
+                                "namespace", "aws-observability"),
+                        "data", Map.of(
+                                "flb_log_cw", "false",
+                                "filters.conf", String.join(newLine,
+                                       "[FILTER]",
+                                       "    Name parser",
+                                       "    Match *",
+                                       "    Key_name log",
+                                       "    Parser crio",
+                                       "[FILTER]",
+                                       "    Name kubernetes",
+                                       "    Match kube.*",
+                                       "    Merge_Log On",
+                                       "    Keep_Log Off",
+                                       "    Buffer_Size 0",
+                                       "    Kube_Meta_Cache_TTL 300s"
+                                       ),
+                                "output.conf", String.join(newLine,
+                                       "[OUTPUT]",
+                                       "    Name cloudwatch_logs",
+                                       "    Match kube.*",
+                                       "    region " + infrastructureStack.getRegion(),
+                                       "    log_group_name /aws/eks/" + projectName + "-cluster/" + fargateProfile.getFargateProfileName(),
+                                       "    log_stream_prefix from-fluent-bit-",
+                                       "    log_retention_days 60",
+                                       "    auto_create_group true"
+                                       ),
+                                "parsers.conf", String.join(newLine,
+                                       "[PARSER]",
+                                       "    Name crio",
+                                       "    Format Regex",
+                                       "    Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$",
+                                       "    Time_Key    time",
+                                       "    Time_Format %Y-%m-%dT%H:%M:%S.%L%z"
+                                       )
+                                       ));
 
-        Map<String, Object> service = Map.of(
-                "apiVersion", "v1",
-                "kind", "Service",
-                "metadata", Map.of(
-                        "name", projectName,
-                        "namespace", projectName),
-                "spec", Map.of(
-                        "type", "LoadBalancer",
-                        "ports", List.of(Map.of("port", 80, "targetPort", 80)),
-                        "selector", appLabel));
+                KubernetesManifest manifestNamespace = KubernetesManifest.Builder.create(scope, projectName + "-manifest-ns")
+                        .cluster(cluster)
+                        .manifest(List.of(namespace))
+                        .build();
 
-        KubernetesManifest manifest = KubernetesManifest.Builder.create(scope, projectName + "-manifest")
-                .cluster(cluster)
-                .manifest(List.of(deployment, service))
-                .build();
+                KubernetesManifest manifestConfigMap = KubernetesManifest.Builder.create(scope, projectName + "-manifest-cm")
+                        .cluster(cluster)
+                        .manifest(List.of(configMap))
+                        .build();
 
-        manifest.getNode().addDependency(manifestNs);
-        serviceAccount.getNode().addDependency(manifestNs);
-        manifest.getNode().addDependency(serviceAccount);
+                manifestConfigMap.getNode().addDependency(manifestNamespace);
+        }
 
-        // And a service account for pod permissions
-
-        // KubernetesManifest manifest = KubernetesManifest.Builder.create(this, "read-only")
-        //         .cluster(eksCluster)
-        //         .manifest(List.of(namespaceManifestConfig))
-        //         .build();
-
-        // Map<String, Object> metricsServerMap = null;
-        // try {
-        //     metricsServerMap = new ObjectMapper().readValue(metricsServerConfig, HashMap.class);
-        // } catch (JsonProcessingException e) {
-        //     e.printStackTrace();
-        // }
-
-        // // Now let's install metrics-server for HPA
-
-        // HelmChartOptions helmChartOptionsMetricsServer = HelmChartOptions.builder()
-        //         .chart("metrics-server")
-        //         .version("3.8.3")
-        //         .release("metricsserver")
-        //         .repository("https://kubernetes-sigs.github.io/metrics-server/")
-        //         .namespace("kube-system")
-        //         .values(metricsServerMap)
-        //         .wait(true)
-        //         .build();
-
-        // eksCluster.addHelmChart("metrics-server",
-        //         helmChartOptionsMetricsServer);
-
-
-
-        // ------
-
-        // Cluster cluster = Cluster.Builder.create(scope, projectName + "-cluster")
-        //     .clusterName(projectName)
-        //     .vpc(infrastructureStack.getVpc())
-        //     .containerInsights(true)
-        //     .build();
-
-        // Role taskRole = Role.Builder.create(scope, projectName + "-task-role")
-        //     .assumedBy(new ServicePrincipal("ecs-tasks.amazonaws.com"))
-        //     .build();
-
-        // Role executionRole = Role.Builder.create(scope, projectName + "-execution-role")
-        //     .assumedBy(new ServicePrincipal("ecs-tasks.amazonaws.com"))
-        //     .build();
-
-        // LogGroup logGroup = LogGroup.Builder.create(scope, projectName + "-log-group")
-        //     .logGroupName("/ecs/" + projectName)
-        //     .removalPolicy(RemovalPolicy.DESTROY)
-        //     .build();
-
-        // AwsLogDriver logging = AwsLogDriver.Builder.create()
-        //     .logGroup(logGroup)
-        //     .streamPrefix("ecs")
-        //     .build();
-
-        // ApplicationLoadBalancedFargateService loadBalancedFargateService =
-        //     ApplicationLoadBalancedFargateService.Builder.create(scope, projectName + "-ecs")
-        //     .cluster(cluster)
-        //     .serviceName(projectName)
-        //     .memoryLimitMiB(2048)
-        //     .cpu(1024)
-        //     .desiredCount(1)
-        //     .taskImageOptions(ApplicationLoadBalancedTaskImageOptions.builder()
-        //         .family(projectName)
-        //         .containerName(projectName)
-        //         .executionRole(executionRole)
-        //         .taskRole(taskRole)
-        //         .logDriver(logging)
-        //         .image(ContainerImage.fromRegistry(
-        //             infrastructureStack.getAccount()
-        //             + ".dkr.ecr."
-        //             + infrastructureStack.getRegion()
-        //             + ".amazonaws.com/"
-        //             + projectName
-        //             + ":latest")
-        //             )
-        //         .enableLogging(true)
-        //         .environment(Map.of(
-        //             "SPRING_DATASOURCE_PASSWORD", infrastructureStack.getDatabaseSecretString(),
-        //             "SPRING_DATASOURCE_URL", infrastructureStack.getDatabaseJDBCConnectionString(),
-        //             "SPRING_DATASOURCE_HIKARI_maximumPoolSize", "1")
-        //         )
-        //         .build())
-        //     .circuitBreaker(DeploymentCircuitBreaker.builder().rollback(true).build())
-        //     .loadBalancerName(projectName)
-        //     .publicLoadBalancer(true)
-        //     .build();
-
-        // new CfnOutput(scope, "LoadBalancerURL", CfnOutputProps.builder()
-        //     .value("http://" + loadBalancedFargateService.getLoadBalancer().getLoadBalancerDnsName())
-        //     .build());
-
-        // infrastructureStack.getEventBridge().grantPutEventsTo(
-        //     loadBalancedFargateService.getTaskDefinition().getTaskRole());
-
-        // // https://raw.githubusercontent.com/aws-observability/aws-otel-collector/main/deployment-template/ecs/aws-otel-fargate-sidecar-deployment-cfn.yaml
-        // PolicyStatement executionRolePolicy = PolicyStatement.Builder.create()
-        //     .effect(Effect.ALLOW)
-        //     //.principals(List.of(new AnyPrincipal()))
-        //     .actions(List.of(
-        //         "ecr:GetAuthorizationToken",
-        //         "ecr:BatchCheckLayerAvailability",
-        //         "ecr:GetDownloadUrlForLayer",
-        //         "ecr:BatchGetImage",
-        //         "cloudwatch:PutMetricData"
-        //         ))
-        //     .resources(List.of("*"))
-        //     .build();
-
-        // PolicyStatement AWSOpenTelemetryPolicy = PolicyStatement.Builder.create()
-        //     .effect(Effect.ALLOW)
-        //     //.principals(List.of(new AnyPrincipal()))
-        //     .actions(List.of(
-        //         "logs:PutLogEvents",
-        //         "logs:CreateLogGroup",
-        //         "logs:CreateLogStream",
-        //         "logs:DescribeLogStreams",
-        //         "logs:DescribeLogGroups",
-        //         "logs:PutRetentionPolicy",
-        //         "xray:PutTraceSegments",
-        //         "xray:PutTelemetryRecords",
-        //         "xray:GetSamplingRules",
-        //         "xray:GetSamplingTargets",
-        //         "xray:GetSamplingStatisticSummaries",
-        //         "cloudwatch:PutMetricData",
-        //         "ssm:GetParameters"
-        //         ))
-        //     .resources(List.of("*"))
-        //     .build();
-
-        // loadBalancedFargateService.getTaskDefinition().addToExecutionRolePolicy(executionRolePolicy);
-        // loadBalancedFargateService.getTaskDefinition().addToTaskRolePolicy(AWSOpenTelemetryPolicy);
-
-        // loadBalancedFargateService.getTaskDefinition().getExecutionRole().addManagedPolicy(
-        //     ManagedPolicy.fromManagedPolicyArn(scope, projectName + "AmazonECSTaskExecutionRolePolicy",
-        //         "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"));
-        // loadBalancedFargateService.getTaskDefinition().getExecutionRole().addManagedPolicy(
-        //     ManagedPolicy.fromManagedPolicyArn(scope, projectName + "AWSXrayWriteOnlyAccess",
-        //         "arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess"));
-        // loadBalancedFargateService.getTaskDefinition().getExecutionRole().addManagedPolicy(
-        //     ManagedPolicy.fromManagedPolicyArn(scope, projectName + "CloudWatchLogsFullAccess",
-        //         "arn:aws:iam::aws:policy/CloudWatchLogsFullAccess"));
-        // loadBalancedFargateService.getTaskDefinition().getExecutionRole().addManagedPolicy(
-        //     ManagedPolicy.fromManagedPolicyArn(scope, projectName + "AmazonSSMReadOnlyAccess",
-        //         "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"));
-
-        // // https://docs.aws.amazon.com/xray/latest/devguide/xray-daemon-ecs.html
-        // // ContainerDefinition xray = loadBalancedFargateService.getTaskDefinition().addContainer("xray-daemon", ContainerDefinitionOptions.builder()
-        // //     .image(ContainerImage.fromRegistry("amazon/aws-xray-daemon"))
-        // //     .logging(logging)
-        // //     .build());
-
-        // // xray.addPortMappings(PortMapping.builder()
-        // //     .containerPort(2000)
-        // //     .protocol(Protocol.UDP)
-        // //     .build());
-
-        // // https://docs.aws.amazon.com/xray/latest/devguide/xray-java-opentel-sdk.html
-        // loadBalancedFargateService.getTaskDefinition().addContainer("otel-collector", ContainerDefinitionOptions.builder()
-        //     .image(ContainerImage.fromRegistry("amazon/aws-otel-collector:latest"))
-        //     // --config=/etc/ecs/ecs-amp-xray.yaml
-        //     // --config=/etc/ecs/ecs-default-config.yaml
-        //     .command(List.of("--config", "/etc/ecs/ecs-xray.yaml"))
-        //     .logging(logging)
-        //     .build());
-
-        // ContainerDefinition otel = loadBalancedFargateService.getTaskDefinition().findContainer("otel-collector");
-
-        // ContainerDependency dependsOnOtel = ContainerDependency.builder()
-        //     .container(otel)
-        //     .condition(ContainerDependencyCondition.START)
-        //     .build();
-        // loadBalancedFargateService.getTaskDefinition().findContainer(projectName).addContainerDependencies(dependsOnOtel);
-
-        // IRepository ecr = Repository.fromRepositoryName(scope, projectName + "-ecr", projectName);
-        // ecr.grantPull(loadBalancedFargateService.getTaskDefinition().getExecutionRole());
-
-        // // deployment construct which listens to ECR events, then deploys to the existing service.
-        // Artifact sourceOuput = Artifact.artifact(projectName + "-ecr-artifact");
-        // Artifact buildOuput = Artifact.artifact(projectName + "-ecs-artifact");
-
-        // EcrSourceAction sourceAction = EcrSourceAction.Builder.create()
-        //     .actionName("ECR_Source")
-        //     .repository(ecr)
-        //     .imageTag("latest")
-        //     .output(sourceOuput)
-        //     .variablesNamespace("ecrvars")
-        //     .build();
-
-        // EcsDeployAction deployAction = EcsDeployAction.Builder.create()
-        //     .actionName("ECS_Deploy")
-        //     .input(buildOuput)
-        //     .service(loadBalancedFargateService.getService())
-        //     .build();
-
-        // PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-deploy")
-        //     .projectName(projectName + "-deploy")
-        //     .vpc(infrastructureStack.getVpc())
-        //     .environment(BuildEnvironment.builder()
-        //         .privileged(true)
-        //         .computeType(ComputeType.SMALL)
-        //         .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4)
-        //         .build())
-        //     .buildSpec(BuildSpec.fromObject(Map.of(
-        //         "version", "0.2",
-        //         "phases", Map.of(
-        //             "build", Map.of(
-        //                 "commands", List.of(
-        //                     "cat imageDetail.json",
-        //                     "IMAGE_DETAIL_URI=$(cat imageDetail.json | python -c \"import sys, json; print(json.load(sys.stdin)['ImageURI'].split('@')[0])\")",
-        //                     "IMAGE_DETAIL_TAG=$(cat imageDetail.json | python -c \"import sys, json; a=json.load(sys.stdin)['ImageTags']; a.sort(); print(a[0])\")",
-        //                     "echo $IMAGE_DETAIL_URI:$IMAGE_DETAIL_TAG",
-        //                     "echo IMAGE_URI=$IMAGE_URI",
-        //                     "echo IMAGE_TAG=$IMAGE_TAG",
-        //                     "echo $(jq -n --arg iu \"$IMAGE_DETAIL_URI:$IMAGE_DETAIL_TAG\" --arg app \"" + projectName + "\" '[{name:$app,imageUri:$iu}]\') > imagedefinitions.json",
-        //                     "cat imagedefinitions.json"
-        //                 )
-        //             )
-        //         ),
-        //         "artifacts", Map.of(
-        //             "files", List.of(
-        //                 "imagedefinitions.json"
-        //             )
-        //         )
-        //     )))
-        //     .environmentVariables(Map.of(
-        //         "IMAGE_URI", BuildEnvironmentVariable.builder()
-        //             .value(sourceAction.getVariables().getImageUri())
-        //             .build(),
-        //         "IMAGE_TAG", BuildEnvironmentVariable.builder()
-        //             .value(sourceAction.getVariables().getImageTag())
-        //             .build()
-        //         )
-        //     )
-        //     .timeout(Duration.minutes(60))
-        //     .build();
-
-        // Pipeline.Builder.create(scope, projectName +  "-pipeline-deploy")
-        //     .pipelineName(projectName + "-deploy")
-        //     .crossAccountKeys(false)
-        //     .stages(List.of(
-        //         StageProps.builder()
-        //             .stageName("Source")
-        //             .actions(List.of(
-        //                     sourceAction
-        //                 )
-        //             )
-        //         .build(),
-        //         StageProps.builder()
-        //             .stageName("Build")
-        //             .actions(List.of(
-        //                 CodeBuildAction.Builder.create()
-        //                     .actionName("CodeBuild_imagedefinitions")
-        //                     .input(sourceOuput)
-        //                     .project(codeBuild)
-        //                     .outputs(List.of(buildOuput))
-        //                     .runOrder(1)
-        //                     .build()
-        //                 )
-        //             )
-        //         .build(),
-        //         StageProps.builder()
-        //             .stageName("Deploy")
-        //             .actions(List.of(
-        //                     deployAction
-        //                 )
-        //             )
-        //         .build()
-        //         )
-        //     )
-        //     .build();
-    }
+        public Cluster getCluster() {
+                return cluster;
+        }
 }
