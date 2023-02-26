@@ -9,6 +9,8 @@ import software.amazon.awscdk.services.eks.FargateProfileOptions;
 import software.amazon.awscdk.services.eks.AlbControllerOptions;
 import software.amazon.awscdk.services.eks.NodegroupOptions;
 import software.amazon.awscdk.services.eks.Selector;
+import software.amazon.awscdk.services.eks.ServiceAccount;
+import software.amazon.awscdk.services.eks.ServiceAccountOptions;
 import software.amazon.awscdk.services.eks.NodegroupAmiType;
 import software.amazon.awscdk.services.eks.AlbControllerVersion;
 import software.amazon.awscdk.services.eks.AwsAuthMapping;
@@ -33,138 +35,271 @@ import java.util.Map;
 
 public class UnicornStoreSpringEKS extends Construct {
 
-        private Cluster cluster;
+    public UnicornStoreSpringEKS(final Construct scope, final String id, InfrastructureStack infrastructureStack) {
+            super(scope, id);
 
-        public UnicornStoreSpringEKS(final Construct scope, final String id, InfrastructureStack infrastructureStack) {
-                super(scope, id);
+        final String projectName = "unicorn-store-spring";
 
-                final String projectName = "unicorn";
-                IRole adminRole = Role.fromRoleArn(scope, projectName + "-admin-role",
-                        "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/Admin",
-                        FromRoleArnOptions.builder().mutable(false)
-                        .build());
-                IRole workshopAdminRole = Role.fromRoleArn(scope, projectName + "-workshop-admin-role",
-                        "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/workshop-admin",
-                        FromRoleArnOptions.builder().mutable(false)
-                        .build());
+        IRole adminRole = Role.fromRoleArn(scope, projectName + "-admin-role",
+            "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/Admin",
+            FromRoleArnOptions.builder().mutable(false)
+            .build());
+        IRole workshopAdminRole = Role.fromRoleArn(scope, projectName + "-workshop-admin-role",
+            "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/workshop-admin",
+            FromRoleArnOptions.builder().mutable(false)
+            .build());
 
-                // Create the EKS cluster
-                cluster = Cluster.Builder.create(scope, projectName + "-cluster").clusterName(projectName)
-                        .clusterName(projectName + "-cluster")
-                        .vpc(infrastructureStack.getVpc())
-                        .vpcSubnets(List.of(SubnetSelection.builder().subnetType(SubnetType.PRIVATE_WITH_EGRESS).build()))
-                        .clusterLogging(Arrays.asList(ClusterLoggingTypes.API,
-                                ClusterLoggingTypes.AUDIT,
-                                ClusterLoggingTypes.AUTHENTICATOR,
-                                ClusterLoggingTypes.CONTROLLER_MANAGER,
-                                ClusterLoggingTypes.SCHEDULER))
-                        .version(KubernetesVersion.of("1.24"))
-                        //.kubectlLayer(new KubectlV24Layer(scope, projectName + "-kubectl"))
-                        .albController(AlbControllerOptions.builder()
-                                .version(AlbControllerVersion.V2_4_1)
-                                .build())
-                        .defaultCapacity(0)
-                        .defaultCapacityInstance(InstanceType.of(InstanceClass.M5, InstanceSize.LARGE))
-                        .build();
+        // Create the EKS cluster
+        var cluster = Cluster.Builder.create(scope, projectName + "-cluster").clusterName(projectName)
+            .clusterName(projectName)
+            .vpc(infrastructureStack.getVpc())
+            .vpcSubnets(List.of(SubnetSelection.builder().subnetType(SubnetType.PRIVATE_WITH_EGRESS).build()))
+            .clusterLogging(Arrays.asList(ClusterLoggingTypes.API,
+                ClusterLoggingTypes.AUDIT,
+                ClusterLoggingTypes.AUTHENTICATOR,
+                ClusterLoggingTypes.CONTROLLER_MANAGER,
+                ClusterLoggingTypes.SCHEDULER))
+            .version(KubernetesVersion.of("1.24"))
+            //.kubectlLayer(new KubectlV24Layer(scope, projectName + "-kubectl"))
+            .albController(AlbControllerOptions.builder()
+                .version(AlbControllerVersion.V2_4_1)
+                .build())
+            .defaultCapacity(0)
+            .defaultCapacityInstance(InstanceType.of(InstanceClass.M5, InstanceSize.LARGE))
+            .build();
 
-                cluster.getAwsAuth().addRoleMapping(adminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
-                cluster.getAwsAuth().addRoleMapping(workshopAdminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
+        cluster.getAwsAuth().addRoleMapping(adminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
+        cluster.getAwsAuth().addRoleMapping(workshopAdminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
 
-                cluster.addNodegroupCapacity("managed-node-group", NodegroupOptions.builder()
-                        .nodegroupName("managed-node-group")
-                        .capacityType(CapacityType.ON_DEMAND)
-                        .instanceTypes(List.of(new InstanceType("m5.large")))
-                        .minSize(1)
-                        .desiredSize(1)
-                        .maxSize(4)
-                        .amiType(NodegroupAmiType.AL2_X86_64)
-                        .build());
+        cluster.addNodegroupCapacity("managed-node-group", NodegroupOptions.builder()
+            .nodegroupName("managed-node-group")
+            .capacityType(CapacityType.ON_DEMAND)
+            .instanceTypes(List.of(new InstanceType("m5.large")))
+            .minSize(1)
+            .desiredSize(1)
+            .maxSize(4)
+            .amiType(NodegroupAmiType.AL2_X86_64)
+            .build());
 
-                FargateProfile fargateProfile = cluster.addFargateProfile(projectName, FargateProfileOptions.builder()
-                        .selectors(List.of(Selector.builder().namespace(projectName + "-*").build()))
-                        .fargateProfileName(projectName + "-fargate-profile")
-                        .build());
+        FargateProfile fargateProfile = cluster.addFargateProfile(projectName + "-fargate-profile", FargateProfileOptions.builder()
+            .selectors(List.of(Selector.builder().namespace(projectName + "*").build()))
+            .fargateProfileName(projectName + "-fargate-profile")
+            .build());
 
-                // Logging for Fargate
-                // https://docs.aws.amazon.com/eks/latest/userguide/fargate-logging.html
-                PolicyStatement executionRolePolicy = PolicyStatement.Builder.create()
-                        .effect(Effect.ALLOW)
-                        //.principals(List.of(new AnyPrincipal()))
-                        .actions(List.of(
-        			"logs:CreateLogStream",
-        			"logs:CreateLogGroup",
-        			"logs:DescribeLogStreams",
-        			"logs:PutLogEvents"
-                        ))
-                        .resources(List.of("*"))
-                        .build();
+        // o11y
+        // Logging for Fargate
+        // https://docs.aws.amazon.com/eks/latest/userguide/fargate-logging.html
+        PolicyStatement executionRolePolicy = PolicyStatement.Builder.create()
+            .effect(Effect.ALLOW)
+            //.principals(List.of(new AnyPrincipal()))
+            .actions(List.of(
+    			"logs:CreateLogStream",
+    			"logs:CreateLogGroup",
+    			"logs:DescribeLogStreams",
+    			"logs:PutLogEvents"))
+            .resources(List.of("*"))
+            .build();
 
-                fargateProfile.getPodExecutionRole().addToPrincipalPolicy(executionRolePolicy);
+        fargateProfile.getPodExecutionRole().addToPrincipalPolicy(executionRolePolicy);
 
-                String newLine = System.getProperty("line.separator");
+        Map<String, Object> o11yNamespace = Map.of(
+            "apiVersion", "v1",
+            "kind", "Namespace",
+            "metadata", Map.of(
+                "name", "aws-observability",
+                "labels", Map.of(
+                    "aws-observability", "enabled")));
 
-                Map<String, Object> namespace = Map.of(
-                        "apiVersion", "v1",
-                        "kind", "Namespace",
-                        "metadata", Map.of("name", "aws-observability",
-                                "labels", Map.of("aws-observability", "enabled")));
+        String newLine = System.getProperty("line.separator");
+        Map<String, Object> o11yConfigMap = Map.of(
+            "apiVersion", "v1",
+            "kind", "ConfigMap",
+            "metadata", Map.of(
+                "name", "aws-logging",
+                "namespace", "aws-observability"),
+            "data", Map.of(
+                "flb_log_cw", "false",
+                "filters.conf", String.join(newLine,
+                   "[FILTER]",
+                   "    Name parser",
+                   "    Match *",
+                   "    Key_name log",
+                   "    Parser crio",
+                   "[FILTER]",
+                   "    Name kubernetes",
+                   "    Match kube.*",
+                   "    Merge_Log On",
+                   "    Keep_Log Off",
+                   "    Buffer_Size 0",
+                   "    Kube_Meta_Cache_TTL 300s"),
+                "output.conf", String.join(newLine,
+                   "[OUTPUT]",
+                   "    Name cloudwatch_logs",
+                   "    Match kube.*",
+                   "    region " + infrastructureStack.getRegion(),
+                   "    log_group_name /aws/eks/" + projectName + "-cluster/" + fargateProfile.getFargateProfileName(),
+                   "    log_stream_prefix from-fluent-bit-",
+                   "    log_retention_days 60",
+                   "    auto_create_group true"),
+                "parsers.conf", String.join(newLine,
+                   "[PARSER]",
+                   "    Name crio",
+                   "    Format Regex",
+                   "    Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$",
+                   "    Time_Key    time",
+                   "    Time_Format %Y-%m-%dT%H:%M:%S.%L%z")));
 
-                Map<String, Object> configMap = Map.of(
-                        "apiVersion", "v1",
-                        "kind", "ConfigMap",
-                        "metadata", Map.of(
-                                "name", "aws-logging",
-                                "namespace", "aws-observability"),
-                        "data", Map.of(
-                                "flb_log_cw", "false",
-                                "filters.conf", String.join(newLine,
-                                       "[FILTER]",
-                                       "    Name parser",
-                                       "    Match *",
-                                       "    Key_name log",
-                                       "    Parser crio",
-                                       "[FILTER]",
-                                       "    Name kubernetes",
-                                       "    Match kube.*",
-                                       "    Merge_Log On",
-                                       "    Keep_Log Off",
-                                       "    Buffer_Size 0",
-                                       "    Kube_Meta_Cache_TTL 300s"
-                                       ),
-                                "output.conf", String.join(newLine,
-                                       "[OUTPUT]",
-                                       "    Name cloudwatch_logs",
-                                       "    Match kube.*",
-                                       "    region " + infrastructureStack.getRegion(),
-                                       "    log_group_name /aws/eks/" + projectName + "-cluster/" + fargateProfile.getFargateProfileName(),
-                                       "    log_stream_prefix from-fluent-bit-",
-                                       "    log_retention_days 60",
-                                       "    auto_create_group true"
-                                       ),
-                                "parsers.conf", String.join(newLine,
-                                       "[PARSER]",
-                                       "    Name crio",
-                                       "    Format Regex",
-                                       "    Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$",
-                                       "    Time_Key    time",
-                                       "    Time_Format %Y-%m-%dT%H:%M:%S.%L%z"
-                                       )
-                                       ));
+        KubernetesManifest o11yManifestNamespace = KubernetesManifest.Builder.create(scope, projectName + "-o11y-manifest-ns")
+            .cluster(cluster)
+            .manifest(List.of(o11yNamespace))
+            .build();
 
-                KubernetesManifest manifestNamespace = KubernetesManifest.Builder.create(scope, projectName + "-manifest-ns")
-                        .cluster(cluster)
-                        .manifest(List.of(namespace))
-                        .build();
+        KubernetesManifest o11yManifestConfigMap = KubernetesManifest.Builder.create(scope, projectName + "-o11y-manifest-cm")
+            .cluster(cluster)
+            .manifest(List.of(o11yConfigMap))
+            .build();
 
-                KubernetesManifest manifestConfigMap = KubernetesManifest.Builder.create(scope, projectName + "-manifest-cm")
-                        .cluster(cluster)
-                        .manifest(List.of(configMap))
-                        .build();
+        o11yManifestConfigMap.getNode().addDependency(o11yManifestNamespace);
 
-                manifestConfigMap.getNode().addDependency(manifestNamespace);
-        }
+        // App
+        Map<String, Object> appNamespace = Map.of(
+            "apiVersion", "v1",
+            "kind", "Namespace",
+            "metadata", Map.of(
+                "name", projectName,
+                "labels", Map.of(
+                    "app", projectName)));
 
-        public Cluster getCluster() {
-                return cluster;
-        }
+        KubernetesManifest appManifestNamespace = KubernetesManifest.Builder.create(scope, projectName + "-app-manifest-ns")
+            .cluster(cluster)
+            .manifest(List.of(appNamespace))
+            .build();
+
+        ServiceAccountOptions appServiceAccountOptions = ServiceAccountOptions.builder()
+            .namespace(projectName)
+            .name(projectName + "-sa")
+            .build();
+        ServiceAccount appServiceAccount = cluster.addServiceAccount(projectName + "-app-sa", appServiceAccountOptions);
+        appServiceAccount.getNode().addDependency(appManifestNamespace);
+
+        infrastructureStack.getEventBridge().grantPutEventsTo(appServiceAccount);
+
+        // https://aws.amazon.com/blogs/opensource/migrating-x-ray-tracing-to-aws-distro-for-opentelemetry/
+        PolicyStatement AWSOpenTelemetryPolicy = PolicyStatement.Builder.create()
+            .effect(Effect.ALLOW)
+            //.principals(List.of(new AnyPrincipal()))
+            .actions(List.of(
+                "logs:PutLogEvents",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:DescribeLogStreams",
+                "logs:DescribeLogGroups",
+                "logs:PutRetentionPolicy",
+                "xray:PutTraceSegments",
+                "xray:PutTelemetryRecords",
+                "xray:GetSamplingRules",
+                "xray:GetSamplingTargets",
+                "xray:GetSamplingStatisticSummaries",
+                "cloudwatch:PutMetricData",
+                "ssm:GetParameters"))
+            .resources(List.of("*"))
+            .build();
+
+        appServiceAccount.getGrantPrincipal().addToPrincipalPolicy(AWSOpenTelemetryPolicy);
+
+        Map<String, Object> appDeployment = Map.of(
+            "apiVersion", "apps/v1",
+            "kind", "Deployment",
+            "metadata", Map.of(
+                "name", projectName,
+                "namespace", projectName,
+                "labels", Map.of(
+                    "app", projectName)),
+            "spec", Map.of(
+                "replicas", 1,
+                "selector", Map.of(
+                    "matchLabels", Map.of(
+                        "app", projectName)),
+                "template", Map.of(
+                    "metadata", Map.of(
+                        "labels", Map.of(
+                            "app", projectName)),
+                    "spec", Map.of(
+                        "serviceAccountName", appServiceAccount.getServiceAccountName(),
+                        "containers", List.of(Map.of(
+                            "name", projectName,
+                            "image", infrastructureStack.getAccount()
+                                    + ".dkr.ecr."
+                                    + infrastructureStack.getRegion()
+                                    + ".amazonaws.com/"
+                                    + projectName
+                                    + ":latest",
+                            "env", List.of(Map.of(
+                                "name", "SPRING_DATASOURCE_PASSWORD",
+                                "value", infrastructureStack.getDatabaseSecretString()
+                                ), Map.of(
+                                "name", "SPRING_DATASOURCE_URL",
+                                "value", infrastructureStack.getDatabaseJDBCConnectionString()
+                                ), Map.of(
+                                "name", "SPRING_DATASOURCE_HIKARI_maximumPoolSize",
+                                "value", "1"
+                                ), Map.of(
+                                "name", "OTEL_OTLP_ENDPOINT",
+                                "value", "localhost:4317"
+                                ), Map.of(
+                                "name", "OTEL_RESOURCE_ATTRIBUTES",
+                                "value", "service.namespace=AWSObservability,service.name=unicorn-store-spring"
+                                ), Map.of(
+                                "name", "S3_REGION",
+                                "value", infrastructureStack.getRegion()
+                                ), Map.of(
+                                "name", "OTEL_METRICS_EXPORTER",
+                                "value", "otlp"
+                                )
+                            ),
+                            "ports", List.of(Map.of(
+                                "containerPort", 80))
+                        ), Map.of(
+                            "name", projectName + "-otel",
+                            "image", "amazon/aws-otel-collector:latest"
+                            )
+                        )
+                    )
+                )
+            )
+        );
+
+        KubernetesManifest appManifestDeployment = KubernetesManifest.Builder.create(scope,
+            projectName + "-manifest-app-deployment")
+            .cluster(cluster)
+            .manifest(List.of(appDeployment))
+            .build();
+        appManifestDeployment.getNode().addDependency(appManifestNamespace);
+
+        Map<String, Object> appService = Map.of(
+            "apiVersion", "v1",
+            "kind", "Service",
+            "metadata", Map.of(
+                "name", projectName,
+                "namespace", projectName),
+            "spec", Map.of(
+                "type", "LoadBalancer",
+                "selector", Map.of(
+                    "app", projectName),
+                 "ports", List.of(Map.of(
+                    "port", 80,
+                    "targetPort", 80,
+                    "protocol", "TCP"
+                    )
+                )
+            )
+        );
+
+        KubernetesManifest appManifestService = KubernetesManifest.Builder.create(scope,
+            projectName + "-manifest-app-service")
+            .cluster(cluster)
+            .manifest(List.of(appService))
+            .build();
+        appManifestService.getNode().addDependency(appManifestDeployment);
+    }
 }
