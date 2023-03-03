@@ -121,6 +121,18 @@ public class InfrastructureStack extends Stack {
         return databaseSecret.secretValueFromJson("password").toString();
     }
 
+    public String getDatabaseSecretKey(){
+        return "password";
+    }
+
+    public DatabaseSecret getDatabaseSecret(){
+        return databaseSecret;
+    }
+
+    public String getDatabaseSecretName(){
+        return databaseSecret.getSecretName();
+    }
+
     public String getDatabaseJDBCConnectionString(){
         return "jdbc:postgresql://" + database.getDbInstanceEndpointAddress() + ":5432/unicorns";
     }

@@ -6,6 +6,7 @@ import software.amazon.awscdk.services.eks.KubernetesVersion;
 import software.amazon.awscdk.services.eks.ClusterLoggingTypes;
 import software.amazon.awscdk.services.eks.FargateProfile;
 import software.amazon.awscdk.services.eks.FargateProfileOptions;
+import software.amazon.awscdk.services.eks.HelmChartOptions;
 import software.amazon.awscdk.services.eks.AlbControllerOptions;
 import software.amazon.awscdk.services.eks.NodegroupOptions;
 import software.amazon.awscdk.services.eks.Selector;
@@ -29,6 +30,9 @@ import software.amazon.awscdk.services.iam.FromRoleArnOptions;
 
 import software.constructs.Construct;
 
+import org.cdk8s.*;
+import org.cdk8s.plus24.*;
+
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
@@ -51,7 +55,7 @@ public class UnicornStoreSpringEKS extends Construct {
 
         // Create the EKS cluster
         var cluster = Cluster.Builder.create(scope, projectName + "-cluster").clusterName(projectName)
-            .clusterName(projectName)
+            .clusterName(projectName + "-cluster")
             .vpc(infrastructureStack.getVpc())
             .vpcSubnets(List.of(SubnetSelection.builder().subnetType(SubnetType.PRIVATE_WITH_EGRESS).build()))
             .clusterLogging(Arrays.asList(ClusterLoggingTypes.API,
@@ -84,6 +88,7 @@ public class UnicornStoreSpringEKS extends Construct {
         FargateProfile fargateProfile = cluster.addFargateProfile(projectName + "-fargate-profile", FargateProfileOptions.builder()
             .selectors(List.of(Selector.builder().namespace(projectName + "*").build()))
             .fargateProfileName(projectName + "-fargate-profile")
+            .vpc(infrastructureStack.getVpc())
             .build());
 
         // o11y
@@ -102,64 +107,122 @@ public class UnicornStoreSpringEKS extends Construct {
 
         fargateProfile.getPodExecutionRole().addToPrincipalPolicy(executionRolePolicy);
 
-        Map<String, Object> o11yNamespace = Map.of(
-            "apiVersion", "v1",
-            "kind", "Namespace",
-            "metadata", Map.of(
-                "name", "aws-observability",
-                "labels", Map.of(
-                    "aws-observability", "enabled")));
+        // Map<String, Object> o11yNamespace = Map.of(
+        //     "apiVersion", "v1",
+        //     "kind", "Namespace",
+        //     "metadata", Map.of(
+        //         "name", "aws-observability",
+        //         "labels", Map.of(
+        //             "aws-observability", "enabled")));
+
+        // KubernetesManifest o11yManifestNamespace = KubernetesManifest.Builder.create(scope, projectName + "-o11y-manifest-ns")
+        //     .cluster(cluster)
+        //     .manifest(List.of(o11yNamespace))
+        //     .build();
+
+        // o11yManifestConfigMap.getNode().addDependency(o11yManifestNamespace);
+
+        // String newLine = System.getProperty("line.separator");
+        // Map<String, Object> o11yConfigMap = Map.of(
+        //     "apiVersion", "v1",
+        //     "kind", "ConfigMap",
+        //     "metadata", Map.of(
+        //         "name", "aws-logging",
+        //         "namespace", "aws-observability"),
+        //     "data", Map.of(
+        //         "flb_log_cw", "false",
+        //         "filters.conf", String.join(newLine,
+        //           "[FILTER]",
+        //           "    Name parser",
+        //           "    Match *",
+        //           "    Key_name log",
+        //           "    Parser crio",
+        //           "[FILTER]",
+        //           "    Name kubernetes",
+        //           "    Match kube.*",
+        //           "    Merge_Log On",
+        //           "    Keep_Log Off",
+        //           "    Buffer_Size 0",
+        //           "    Kube_Meta_Cache_TTL 300s"),
+        //         "output.conf", String.join(newLine,
+        //           "[OUTPUT]",
+        //           "    Name cloudwatch_logs",
+        //           "    Match kube.*",
+        //           "    region " + infrastructureStack.getRegion(),
+        //           "    log_group_name /aws/eks/" + projectName + "-cluster/" + fargateProfile.getFargateProfileName(),
+        //           "    log_stream_prefix from-fluent-bit-",
+        //           "    log_retention_days 60",
+        //           "    auto_create_group true"),
+        //         "parsers.conf", String.join(newLine,
+        //           "[PARSER]",
+        //           "    Name crio",
+        //           "    Format Regex",
+        //           "    Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$",
+        //           "    Time_Key    time",
+        //           "    Time_Format %Y-%m-%dT%H:%M:%S.%L%z")));
+
+        // KubernetesManifest o11yManifestConfigMap = KubernetesManifest.Builder.create(scope, projectName + "-o11y-manifest-cm")
+        //     .cluster(cluster)
+        //     .manifest(List.of(o11yConfigMap))
+        //     .build();
+
+        // o11yManifestConfigMap.getNode().addDependency(o11yManifestNamespace);
+
+        App cdk8sApp = new App();
+        Chart o11yChart = new Chart(cdk8sApp, "o11y-chart");
+
+        Namespace o11yNamespace = Namespace.Builder.create(o11yChart, "aws-observability")
+            .metadata(ApiObjectMetadata.builder()
+                .name("aws-observability")
+                .labels(Map.of(
+                    "aws-observability", "enabled"
+                    )
+                )
+                .build())
+            .build();
 
         String newLine = System.getProperty("line.separator");
-        Map<String, Object> o11yConfigMap = Map.of(
-            "apiVersion", "v1",
-            "kind", "ConfigMap",
-            "metadata", Map.of(
-                "name", "aws-logging",
-                "namespace", "aws-observability"),
-            "data", Map.of(
+        ConfigMap o11yConfigMap = ConfigMap.Builder.create(o11yChart, "aws-logging")
+            .metadata(ApiObjectMetadata.builder()
+                .name("aws-logging")
+                .namespace("aws-observability")
+                .build())
+            .data(Map.of(
                 "flb_log_cw", "false",
                 "filters.conf", String.join(newLine,
-                   "[FILTER]",
-                   "    Name parser",
-                   "    Match *",
-                   "    Key_name log",
-                   "    Parser crio",
-                   "[FILTER]",
-                   "    Name kubernetes",
-                   "    Match kube.*",
-                   "    Merge_Log On",
-                   "    Keep_Log Off",
-                   "    Buffer_Size 0",
-                   "    Kube_Meta_Cache_TTL 300s"),
+                  "[FILTER]",
+                  "    Name parser",
+                  "    Match *",
+                  "    Key_name log",
+                  "    Parser crio",
+                  "[FILTER]",
+                  "    Name kubernetes",
+                  "    Match kube.*",
+                  "    Merge_Log On",
+                  "    Keep_Log Off",
+                  "    Buffer_Size 0",
+                  "    Kube_Meta_Cache_TTL 300s"),
                 "output.conf", String.join(newLine,
-                   "[OUTPUT]",
-                   "    Name cloudwatch_logs",
-                   "    Match kube.*",
-                   "    region " + infrastructureStack.getRegion(),
-                   "    log_group_name /aws/eks/" + projectName + "-cluster/" + fargateProfile.getFargateProfileName(),
-                   "    log_stream_prefix from-fluent-bit-",
-                   "    log_retention_days 60",
-                   "    auto_create_group true"),
+                  "[OUTPUT]",
+                  "    Name cloudwatch_logs",
+                  "    Match kube.*",
+                  "    region " + infrastructureStack.getRegion(),
+                  "    log_group_name /aws/eks/" + projectName + "-cluster/" + fargateProfile.getFargateProfileName(),
+                  "    log_stream_prefix from-fluent-bit-",
+                  "    log_retention_days 60",
+                  "    auto_create_group true"),
                 "parsers.conf", String.join(newLine,
-                   "[PARSER]",
-                   "    Name crio",
-                   "    Format Regex",
-                   "    Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$",
-                   "    Time_Key    time",
-                   "    Time_Format %Y-%m-%dT%H:%M:%S.%L%z")));
-
-        KubernetesManifest o11yManifestNamespace = KubernetesManifest.Builder.create(scope, projectName + "-o11y-manifest-ns")
-            .cluster(cluster)
-            .manifest(List.of(o11yNamespace))
+                  "[PARSER]",
+                  "    Name crio",
+                  "    Format Regex",
+                  "    Regex ^(?<time>[^ ]+) (?<stream>stdout|stderr) (?<logtag>P|F) (?<log>.*)$",
+                  "    Time_Key    time",
+                  "    Time_Format %Y-%m-%dT%H:%M:%S.%L%z")))
             .build();
 
-        KubernetesManifest o11yManifestConfigMap = KubernetesManifest.Builder.create(scope, projectName + "-o11y-manifest-cm")
-            .cluster(cluster)
-            .manifest(List.of(o11yConfigMap))
-            .build();
+        o11yConfigMap.getNode().addDependency(o11yNamespace);
 
-        o11yManifestConfigMap.getNode().addDependency(o11yManifestNamespace);
+        cluster.addCdk8sChart("o11y-chart", o11yChart);
 
         // App
         Map<String, Object> appNamespace = Map.of(
@@ -183,6 +246,88 @@ public class UnicornStoreSpringEKS extends Construct {
         appServiceAccount.getNode().addDependency(appManifestNamespace);
 
         infrastructureStack.getEventBridge().grantPutEventsTo(appServiceAccount);
+
+        // Using AWS SecretManager with External Secret Operator
+        // https://aws.amazon.com/blogs/containers/leverage-aws-secrets-stores-from-eks-fargate-with-external-secrets-operator/
+
+        infrastructureStack.getDatabaseSecret().grantRead(appServiceAccount);
+
+        cluster.addHelmChart("external-secrets-operator", HelmChartOptions.builder()
+            .repository("https://charts.external-secrets.io")
+            .chart("external-secrets")
+            .release("external-secrets")
+            .namespace("external-secrets")
+            .createNamespace(true)
+            .values(Map.of(
+                "installCRDs", true,
+                "webhook.port", 9443))
+            .wait(true)
+            .build());
+
+        Map<String, Object> secretStore = Map.of(
+            "apiVersion", "external-secrets.io/v1beta1",
+            "kind", "SecretStore",
+            "metadata", Map.of(
+                "name", projectName + "-secret-store",
+                "namespace", projectName),
+            "spec", Map.of(
+                "provider", Map.of(
+                    "aws", Map.of(
+                        "service", "SecretsManager",
+                        "region", infrastructureStack.getRegion(),
+                        "auth", Map.of(
+                            "jwt", Map.of(
+                                "serviceAccountRef", Map.of(
+                                    "name", projectName + "-sa"
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        );
+        KubernetesManifest secretStoreManifest = KubernetesManifest.Builder.create(scope,
+            projectName + "-manifest-secret-store")
+            .cluster(cluster)
+            .manifest(List.of(secretStore))
+            .build();
+        secretStoreManifest.getNode().addDependency(appServiceAccount);
+
+        Map<String, Object> externalSecret = Map.of(
+            "apiVersion", "external-secrets.io/v1beta1",
+            "kind", "ExternalSecret",
+            "metadata", Map.of(
+                "name", projectName + "-external-secret",
+                "namespace", projectName),
+            "spec", Map.of(
+                "refreshInterval", "1h",
+                "secretStoreRef", Map.of(
+                    "name", projectName + "-secret-store",
+                    "kind", "SecretStore"
+                ),
+                "target", Map.of(
+                    "name", infrastructureStack.getDatabaseSecretName(),
+                    "creationPolicy", "Owner"
+                ),
+                "data", List.of(Map.of(
+                    "secretKey", infrastructureStack.getDatabaseSecretKey(),
+                    "remoteRef", Map.of(
+                        "key", infrastructureStack.getDatabaseSecretName(),
+                        "property", infrastructureStack.getDatabaseSecretKey()
+                        )
+                    )
+                )
+            )
+        );
+
+        KubernetesManifest externalSecretManifest = KubernetesManifest.Builder.create(scope,
+            projectName + "-manifest-external-secret")
+            .cluster(cluster)
+            .manifest(List.of(externalSecret))
+            .build();
+        externalSecretManifest.getNode().addDependency(secretStoreManifest);
+
+
 
         // https://aws.amazon.com/blogs/opensource/migrating-x-ray-tracing-to-aws-distro-for-opentelemetry/
         PolicyStatement AWSOpenTelemetryPolicy = PolicyStatement.Builder.create()
@@ -227,6 +372,10 @@ public class UnicornStoreSpringEKS extends Construct {
                     "spec", Map.of(
                         "serviceAccountName", appServiceAccount.getServiceAccountName(),
                         "containers", List.of(Map.of(
+                            "resources", Map.of(
+                                "requests", Map.of(
+                                    "cpu", "1",
+                                    "memory", "2Gi")),
                             "name", projectName,
                             "image", infrastructureStack.getAccount()
                                     + ".dkr.ecr."
@@ -236,7 +385,13 @@ public class UnicornStoreSpringEKS extends Construct {
                                     + ":latest",
                             "env", List.of(Map.of(
                                 "name", "SPRING_DATASOURCE_PASSWORD",
-                                "value", infrastructureStack.getDatabaseSecretString()
+                                "valueFrom", Map.of(
+                                    "secretKeyRef", Map.of(
+                                        "name", infrastructureStack.getDatabaseSecretName(),
+                                        "key", infrastructureStack.getDatabaseSecretKey(),
+                                        "optional", false
+                                        )
+                                    )
                                 ), Map.of(
                                 "name", "SPRING_DATASOURCE_URL",
                                 "value", infrastructureStack.getDatabaseJDBCConnectionString()
