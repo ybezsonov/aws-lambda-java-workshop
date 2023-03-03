@@ -43,9 +43,15 @@ public class UnicornPublisher {
             System.out.println("Publishing ...");
             System.out.println(unicornJson);
         } catch (JsonProcessingException e) {
-            throw new PublisherException("Error while serializing the Unicorn", e);
+            System.out.println("Error JsonProcessingException ...");
+            System.out.println(e.getMessage());
+            System.out.println(e.getStackTrace());
+            // throw new PublisherException("Error while serializing the Unicorn", e);
         } catch (EventBridgeException | ExecutionException | InterruptedException e) {
-            throw new PublisherException("Error while publishing the event", e);
+            System.out.println("Error EventBridgeException | ExecutionException ...");
+            System.out.println(e.getMessage());
+            System.out.println(e.getStackTrace());
+            // throw new PublisherException("Error while publishing the event", e);
         }
     }
 
