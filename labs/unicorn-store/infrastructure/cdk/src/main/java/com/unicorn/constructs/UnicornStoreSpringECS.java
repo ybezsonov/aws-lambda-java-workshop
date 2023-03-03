@@ -213,8 +213,8 @@ public class UnicornStoreSpringECS extends Construct {
             .service(loadBalancedFargateService.getService())
             .build();
 
-        PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-deploy")
-            .projectName(projectName + "-deploy")
+        PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-ecs-deploy")
+            .projectName(projectName + "-ecs-deploy")
             .vpc(infrastructureStack.getVpc())
             .environment(BuildEnvironment.builder()
                 .privileged(true)
@@ -255,8 +255,8 @@ public class UnicornStoreSpringECS extends Construct {
             .timeout(Duration.minutes(60))
             .build();
 
-        Pipeline.Builder.create(scope, projectName +  "-pipeline-deploy")
-            .pipelineName(projectName + "-deploy")
+        Pipeline.Builder.create(scope, projectName +  "-pipeline-ecs-deploy")
+            .pipelineName(projectName + "-ecs-deploy")
             .crossAccountKeys(false)
             .stages(List.of(
                 StageProps.builder()
