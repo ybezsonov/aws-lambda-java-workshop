@@ -17,21 +17,10 @@ import software.amazon.awscdk.services.eks.AlbControllerVersion;
 import software.amazon.awscdk.services.eks.AwsAuthMapping;
 import software.amazon.awscdk.services.eks.CapacityType;
 import software.amazon.awscdk.services.eks.KubernetesManifest;
+import software.amazon.awscdk.services.eks.KubernetesObjectValue;
+import software.amazon.awscdk.CfnOutputProps;
+import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.Duration;
-// import software.amazon.awscdk.Duration;
-// import software.amazon.awscdk.services.codebuild.BuildEnvironment;
-// import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariable;
-// import software.amazon.awscdk.services.codebuild.BuildSpec;
-// import software.amazon.awscdk.services.codebuild.ComputeType;
-// import software.amazon.awscdk.services.codebuild.LinuxBuildImage;
-// import software.amazon.awscdk.services.codebuild.PipelineProject;
-// import software.amazon.awscdk.services.codepipeline.Artifact;
-// import software.amazon.awscdk.services.codepipeline.Pipeline;
-// import software.amazon.awscdk.services.codepipeline.StageProps;
-// import software.amazon.awscdk.services.codepipeline.actions.CodeBuildAction;
-// import software.amazon.awscdk.services.codepipeline.actions.EcrSourceAction;
-// import software.amazon.awscdk.services.ecr.IRepository;
-// import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ec2.InstanceClass;
 import software.amazon.awscdk.services.ec2.InstanceSize;
 import software.amazon.awscdk.services.ec2.SubnetType;
@@ -42,20 +31,33 @@ import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.FromRoleArnOptions;
-import software.amazon.awscdk.services.lambda.Code;
-import software.amazon.awscdk.services.lambda.Function;
-import software.amazon.awscdk.services.lambda.Runtime;
-import software.amazon.awscdk.services.events.EventPattern;
-import software.amazon.awscdk.services.events.Rule;
-import software.amazon.awscdk.services.events.targets.LambdaFunction;
+// import software.amazon.awscdk.services.lambda.Code;
+// import software.amazon.awscdk.services.lambda.Function;
+// import software.amazon.awscdk.services.lambda.Runtime;
+// import software.amazon.awscdk.services.events.EventPattern;
+// import software.amazon.awscdk.services.events.Rule;
+// import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.cdk.lambdalayer.kubectl.v24.KubectlV24Layer;
+import software.amazon.awscdk.services.ecr.IRepository;
+import software.amazon.awscdk.services.ecr.Repository;
+import software.amazon.awscdk.services.codebuild.PipelineProject;
+import software.amazon.awscdk.services.codebuild.BuildSpec;
+import software.amazon.awscdk.services.codebuild.ComputeType;
+import software.amazon.awscdk.services.codebuild.LinuxBuildImage;
+import software.amazon.awscdk.services.codebuild.BuildEnvironment;
+import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariable;
+import software.amazon.awscdk.services.codepipeline.Pipeline;
+import software.amazon.awscdk.services.codepipeline.Artifact;
+import software.amazon.awscdk.services.codepipeline.StageProps;
+import software.amazon.awscdk.services.codepipeline.actions.CodeBuildAction;
+import software.amazon.awscdk.services.codepipeline.actions.EcrSourceAction;
 
 import software.constructs.Construct;
 
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.HashMap;
+//import java.util.HashMap;
 
 import org.cdk8s.ApiObjectMetadata;
 import org.cdk8s.App;
@@ -480,6 +482,122 @@ public class UnicornStoreSpringEKS extends Construct {
             .manifest(List.of(appService))
             .build();
         appManifestService.getNode().addDependency(appManifestDeployment);
+        appManifestService.getNode().addDependency(cluster.getAlbController());
+
+        // query the load balancer address
+        KubernetesObjectValue appServiceAddress = KubernetesObjectValue.Builder.create(scope, projectName + "-loadbalancer-attribute")
+            .cluster(cluster)
+            .objectType("service")
+            .objectNamespace(projectName)
+            .objectName(projectName)
+            .jsonPath(".status.loadBalancer.ingress[0].hostname")
+            .build();
+        new CfnOutput(scope, "UnicornStoreURL", CfnOutputProps.builder()
+            .value("http://" + appServiceAddress.getValue())
+            .build());
+
+        // deployment construct which listens to ECR events, then deploys to the existing service.
+        IRepository ecr = Repository.fromRepositoryName(scope, projectName + "-ecr", projectName);
+
+        Artifact sourceOuput = Artifact.artifact(projectName + "-ecr-artifact");
+
+        EcrSourceAction sourceAction = EcrSourceAction.Builder.create()
+            .actionName("ECR_Source")
+            .repository(ecr)
+            .imageTag("latest")
+            .output(sourceOuput)
+            .variablesNamespace("ecrvars")
+            .build();
+
+        PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-eks-deploy")
+            .projectName(projectName + "-eks-deploy")
+            .vpc(infrastructureStack.getVpc())
+            .environment(BuildEnvironment.builder()
+                .privileged(true)
+                .computeType(ComputeType.SMALL)
+                .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4)
+                .build())
+            .buildSpec(BuildSpec.fromObject(Map.of(
+                "version", "0.2",
+                "phases", Map.of(
+                    "build", Map.of(
+                        "commands", List.of(
+                            "cat imageDetail.json",
+                            "IMAGE_DETAIL_URI=$(cat imageDetail.json | python -c \"import sys, json; print(json.load(sys.stdin)['ImageURI'].split('@')[0])\")",
+                            "IMAGE_DETAIL_TAG=$(cat imageDetail.json | python -c \"import sys, json; a=json.load(sys.stdin)['ImageTags']; a.sort(); print(a[0])\")",
+                            "echo $IMAGE_DETAIL_URI:$IMAGE_DETAIL_TAG",
+                            "echo IMAGE_URI=$IMAGE_URI",
+                            "echo IMAGE_TAG=$IMAGE_TAG",
+                            "echo \"spec:\">> patch.yml",
+                            "echo \"  template:\">> patch.yml",
+                            "echo \"    spec:\">> patch.yml",
+                            "echo \"      containers:\">> patch.yml",
+                            "echo \"      - name: unicorn-store-spring\">> patch.yml",
+                            "echo \"        image: $IMAGE_DETAIL_URI:$IMAGE_DETAIL_TAG\">> patch.yml",
+                            "cat patch.yml",
+                            "aws eks update-kubeconfig --name unicorn-store-spring-cluster --region eu-west-1 --role-arn " + workshopAdminRole.getRoleArn(),
+                            "kubectl -n " + projectName + " patch deployment " + projectName + " --patch-file patch.yml"
+                        )
+                    )
+                )
+            )))
+            .environmentVariables(Map.of(
+                "IMAGE_URI", BuildEnvironmentVariable.builder()
+                    .value(sourceAction.getVariables().getImageUri())
+                    .build(),
+                "IMAGE_TAG", BuildEnvironmentVariable.builder()
+                    .value(sourceAction.getVariables().getImageTag())
+                    .build()
+            ))
+            .timeout(Duration.minutes(60))
+            .build();
+
+        PolicyStatement EksRoPolicy = PolicyStatement.Builder.create()
+            .effect(Effect.ALLOW)
+            .actions(List.of(
+                "eks:DescribeNodegroup",
+                "eks:DescribeUpdate",
+                "eks:DescribeCluster"))
+            .resources(List.of("*"))
+            .build();
+
+        PolicyStatement CodeBuildSTSPolicy = PolicyStatement.Builder.create()
+            .effect(Effect.ALLOW)
+            .actions(List.of(
+                "sts:AssumeRole"))
+            .resources(List.of(workshopAdminRole.getRoleArn()))
+            .build();
+
+        codeBuild.addToRolePolicy(EksRoPolicy);
+        codeBuild.addToRolePolicy(CodeBuildSTSPolicy);
+        workshopAdminRole.grantAssumeRole(codeBuild.getGrantPrincipal());
+
+        Pipeline.Builder.create(scope, projectName +  "-pipeline-eks-deploy")
+            .pipelineName(projectName + "-eks-deploy")
+            .crossAccountKeys(false)
+            .stages(List.of(
+                StageProps.builder()
+                    .stageName("Source")
+                    .actions(List.of(
+                            sourceAction
+                        )
+                    )
+                .build(),
+                StageProps.builder()
+                    .stageName("Deploy")
+                    .actions(List.of(
+                        CodeBuildAction.Builder.create()
+                            .actionName("CodeBuild_deploy")
+                            .input(sourceOuput)
+                            .project(codeBuild)
+                            .runOrder(1)
+                            .build()
+                        )
+                    )
+                .build()
+                )
+            )
+            .build();
 
         // CD to EKS using event from ECR and Lambda to change image in App deployment
         // Function fn = Function.Builder.create(scope, projectName + "-deploy-lambda")
@@ -487,8 +605,8 @@ public class UnicornStoreSpringEKS extends Construct {
         //     .functionName(projectName + "-deploy-lambda")
         //     .memorySize(1024)
         //     .timeout(Duration.seconds(29))
-        //     .code(Code.fromAsset("src/micronaut/target/store-micronaut-1.0.0.jar"))
-        //     .handler("com.unicorn.lambda.DeployHandler::handleRequest")
+        //     .code(Code.fromAsset("../eks-lambda/target/eks-lambda.jar"))
+        //     .handler("com.amazon.aws.DeployHandler::handleRequest")
         //     .layers(List.of(new KubectlV24Layer(scope, projectName + "-deploy-lambda-kubectl-layer")))
         //     .vpc(infrastructureStack.getVpc())
         //     .securityGroups(List.of(infrastructureStack.getApplicationSecurityGroup()))
@@ -501,99 +619,22 @@ public class UnicornStoreSpringEKS extends Construct {
         //     .build();
 
         // Rule rule = Rule.Builder.create(this, "rule")
-        // .eventPattern(EventPattern.builder()
-        //     .source(List.of("aws.ec2"))
-        //     .build())
+        //     .eventPattern(EventPattern.builder()
+        //         .source(List.of("aws.ecr"))
+        //         .detailType(List.of("ECR Image Action"))
+        //         .detail(Map.of(
+        //             "repository-name", List.of(projectName),
+        //             "action-type", List.of("PUSH"),
+        //             "image-tag", List.of("latest"),
+        //             "result", List.of("SUCCESS")
+        //             )
+        //         )
+        //         .build())
         // .build();
 
         // rule.addTarget(LambdaFunction.Builder.create(fn)
         //     .maxEventAge(Duration.hours(2)) // Optional: set the maxEventAge retry policy
         //     .retryAttempts(2)
         //     .build());
-
-        // CD Pipeline
-        // IRepository ecr = Repository.fromRepositoryName(scope, projectName + "-ecr", projectName);
-
-        // // deployment construct which listens to ECR events, then deploys to the existing service.
-        // Artifact sourceOuput = Artifact.artifact(projectName + "-ecr-artifact");
-        // Artifact buildOuput = Artifact.artifact(projectName + "-ecs-artifact");
-
-        // EcrSourceAction sourceAction = EcrSourceAction.Builder.create()
-        //     .actionName("ECR_Source")
-        //     .repository(ecr)
-        //     .imageTag("latest")
-        //     .output(sourceOuput)
-        //     .variablesNamespace("ecrvars")
-        //     .build();
-
-        // PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-deploy")
-        //     .projectName(projectName + "-deploy")
-        //     .vpc(infrastructureStack.getVpc())
-        //     .environment(BuildEnvironment.builder()
-        //         .privileged(true)
-        //         .computeType(ComputeType.SMALL)
-        //         .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4)
-        //         .build())
-        //     .buildSpec(BuildSpec.fromObject(Map.of(
-        //         "version", "0.2",
-        //         "phases", Map.of(
-        //             "build", Map.of(
-        //                 "commands", List.of(
-        //                     "cat imageDetail.json",
-        //                     "IMAGE_DETAIL_URI=$(cat imageDetail.json | python -c \"import sys, json; print(json.load(sys.stdin)['ImageURI'].split('@')[0])\")",
-        //                     "IMAGE_DETAIL_TAG=$(cat imageDetail.json | python -c \"import sys, json; a=json.load(sys.stdin)['ImageTags']; a.sort(); print(a[0])\")",
-        //                     "echo $IMAGE_DETAIL_URI:$IMAGE_DETAIL_TAG",
-        //                     "echo IMAGE_URI=$IMAGE_URI",
-        //                     "echo IMAGE_TAG=$IMAGE_TAG",
-        //                     "echo $(jq -n --arg iu \"$IMAGE_DETAIL_URI:$IMAGE_DETAIL_TAG\" --arg app \"" + projectName + "\" '[{name:$app,imageUri:$iu}]\') > imagedefinitions.json",
-        //                     "cat imagedefinitions.json"
-        //                 )
-        //             )
-        //         ),
-        //         "artifacts", Map.of(
-        //             "files", List.of(
-        //                 "imagedefinitions.json"
-        //             )
-        //         )
-        //     )))
-        //     .environmentVariables(Map.of(
-        //         "IMAGE_URI", BuildEnvironmentVariable.builder()
-        //             .value(sourceAction.getVariables().getImageUri())
-        //             .build(),
-        //         "IMAGE_TAG", BuildEnvironmentVariable.builder()
-        //             .value(sourceAction.getVariables().getImageTag())
-        //             .build()
-        //         )
-        //     )
-        //     .timeout(Duration.minutes(60))
-        //     .build();
-
-        // Pipeline.Builder.create(scope, projectName +  "-pipeline-deploy")
-        //     .pipelineName(projectName + "-deploy")
-        //     .crossAccountKeys(false)
-        //     .stages(List.of(
-        //         StageProps.builder()
-        //             .stageName("Source")
-        //             .actions(List.of(
-        //                     sourceAction
-        //                 )
-        //             )
-        //         .build(),
-        //         StageProps.builder()
-        //             .stageName("Deploy")
-        //             .actions(List.of(
-        //                 CodeBuildAction.Builder.create()
-        //                     .actionName("CodeBuild_imagedefinitions")
-        //                     .input(sourceOuput)
-        //                     .project(codeBuild)
-        //                     .outputs(List.of(buildOuput))
-        //                     .runOrder(1)
-        //                     .build()
-        //                 )
-        //             )
-        //         .build()
-        //         )
-        //     )
-        //     .build();
     }
 }

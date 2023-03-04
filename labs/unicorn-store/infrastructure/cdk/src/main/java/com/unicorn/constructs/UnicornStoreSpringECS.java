@@ -5,12 +5,10 @@ import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
-//import software.amazon.awscdk.services.ecs.Protocol;
 import software.amazon.awscdk.services.ecs.AwsLogDriver;
 import software.amazon.awscdk.services.ecs.Cluster;
 import software.amazon.awscdk.services.ecs.ContainerImage;
 import software.amazon.awscdk.services.ecs.ContainerDefinition;
-//import software.amazon.awscdk.services.ecs.PortMapping;
 import software.amazon.awscdk.services.ecs.DeploymentCircuitBreaker;
 import software.amazon.awscdk.services.ecs.ContainerDefinitionOptions;
 import software.amazon.awscdk.services.ecs.ContainerDependency;
@@ -192,10 +190,10 @@ public class UnicornStoreSpringECS extends Construct {
             .build();
         loadBalancedFargateService.getTaskDefinition().findContainer(projectName).addContainerDependencies(dependsOnOtel);
 
+        // deployment construct which listens to ECR events, then deploys to the existing service.
         IRepository ecr = Repository.fromRepositoryName(scope, projectName + "-ecr", projectName);
         ecr.grantPull(loadBalancedFargateService.getTaskDefinition().getExecutionRole());
 
-        // deployment construct which listens to ECR events, then deploys to the existing service.
         Artifact sourceOuput = Artifact.artifact(projectName + "-ecr-artifact");
         Artifact buildOuput = Artifact.artifact(projectName + "-ecs-artifact");
 
