@@ -21,14 +21,16 @@ public class UnicornStoreApp {
         var unicornStoreSpring = new UnicornStoreStack(app, "UnicornStoreSpringApp", StackProps.builder()
                 .build(), infrastructureStack);
 
-        var unicornStoreSpringCI = new UnicornStoreCIStack(app, "UnicornStoreSpringCI", StackProps.builder()
-                .build(), infrastructureStack);
+        var stackName = "UnicornStoreSpring";
+        var projectName = "unicorn-store-spring";
+        var unicornStoreSpringCI = new UnicornStoreCIStack(app, stackName + "CI", StackProps.builder()
+                .build(), infrastructureStack, projectName);
 
-        var unicornStoreSpringECS = new UnicornStoreECSStack(app, "UnicornStoreSpringECS", StackProps.builder()
-                .build(), infrastructureStack);
+        var unicornStoreSpringECS = new UnicornStoreECSStack(app, stackName + "ECS", StackProps.builder()
+                .build(), infrastructureStack, projectName);
 
-        var unicornStoreSpringEKS = new UnicornStoreEKSStack(app, "UnicornStoreSpringEKS", StackProps.builder()
-                .build(), infrastructureStack);
+        var unicornStoreSpringEKS = new UnicornStoreEKSStack(app, stackName + "EKS", StackProps.builder()
+                .build(), infrastructureStack, projectName);
 
         //Add CDK-NAG checks: https://github.com/cdklabs/cdk-nag
         //Add suppression to exclude certain findings that are not needed for Workshop environment

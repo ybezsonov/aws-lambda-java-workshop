@@ -26,6 +26,7 @@ import software.amazon.awscdk.services.ec2.InstanceSize;
 import software.amazon.awscdk.services.ec2.SubnetType;
 import software.amazon.awscdk.services.ec2.InstanceType;
 import software.amazon.awscdk.services.ec2.SubnetSelection;
+import software.amazon.awscdk.services.ec2.Port;
 import software.amazon.awscdk.services.iam.IRole;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
@@ -65,12 +66,10 @@ import org.cdk8s.Chart;
 import org.cdk8s.plus24.ConfigMap;
 import org.cdk8s.plus24.Namespace;
 
-public class UnicornStoreSpringEKS extends Construct {
+public class UnicornStoreEKS extends Construct {
 
-    public UnicornStoreSpringEKS(final Construct scope, final String id, InfrastructureStack infrastructureStack) {
+    public UnicornStoreEKS(final Construct scope, final String id, InfrastructureStack infrastructureStack, final String projectName) {
             super(scope, id);
-
-        final String projectName = "unicorn-store-spring";
 
         IRole adminRole = Role.fromRoleArn(scope, projectName + "-admin-role",
             "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/Admin",
@@ -83,7 +82,7 @@ public class UnicornStoreSpringEKS extends Construct {
 
         // Create the EKS cluster
         var cluster = Cluster.Builder.create(scope, projectName + "-cluster").clusterName(projectName)
-            .clusterName(projectName + "-cluster")
+            .clusterName(projectName)
             .vpc(infrastructureStack.getVpc())
             .vpcSubnets(List.of(SubnetSelection.builder().subnetType(SubnetType.PRIVATE_WITH_EGRESS).build()))
             .clusterLogging(Arrays.asList(ClusterLoggingTypes.API,
@@ -177,7 +176,7 @@ public class UnicornStoreSpringEKS extends Construct {
         //           "    Name cloudwatch_logs",
         //           "    Match kube.*",
         //           "    region " + infrastructureStack.getRegion(),
-        //           "    log_group_name /aws/eks/" + projectName + "-cluster/" + fargateProfile.getFargateProfileName(),
+        //           "    log_group_name /aws/eks/" + projectName + "/" + fargateProfile.getFargateProfileName(),
         //           "    log_stream_prefix from-fluent-bit-",
         //           "    log_retention_days 60",
         //           "    auto_create_group true"),
@@ -235,7 +234,7 @@ public class UnicornStoreSpringEKS extends Construct {
                   "    Name cloudwatch_logs",
                   "    Match kube.*",
                   "    region " + infrastructureStack.getRegion(),
-                  "    log_group_name /aws/eks/" + projectName + "-cluster/" + fargateProfile.getFargateProfileName(),
+                  "    log_group_name /aws/eks/" + projectName + "/" + fargateProfile.getFargateProfileName(),
                   "    log_stream_prefix from-fluent-bit-",
                   "    log_retention_days 60",
                   "    auto_create_group true"),
@@ -492,7 +491,7 @@ public class UnicornStoreSpringEKS extends Construct {
             .objectName(projectName)
             .jsonPath(".status.loadBalancer.ingress[0].hostname")
             .build();
-        new CfnOutput(scope, "UnicornStoreURL", CfnOutputProps.builder()
+        new CfnOutput(scope, "UnicornStoreServiceURL", CfnOutputProps.builder()
             .value("http://" + appServiceAddress.getValue())
             .build());
 
@@ -502,15 +501,15 @@ public class UnicornStoreSpringEKS extends Construct {
         Artifact sourceOuput = Artifact.artifact(projectName + "-ecr-artifact");
 
         EcrSourceAction sourceAction = EcrSourceAction.Builder.create()
-            .actionName("ECR_Source")
+            .actionName("source-ecr")
             .repository(ecr)
             .imageTag("latest")
             .output(sourceOuput)
             .variablesNamespace("ecrvars")
             .build();
 
-        PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-eks-deploy")
-            .projectName(projectName + "-eks-deploy")
+        PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-deploy-eks")
+            .projectName(projectName + "-deploy-eks")
             .vpc(infrastructureStack.getVpc())
             .environment(BuildEnvironment.builder()
                 .privileged(true)
@@ -535,7 +534,7 @@ public class UnicornStoreSpringEKS extends Construct {
                             "echo \"      - name: unicorn-store-spring\">> patch.yml",
                             "echo \"        image: $IMAGE_DETAIL_URI:$IMAGE_DETAIL_TAG\">> patch.yml",
                             "cat patch.yml",
-                            "aws eks update-kubeconfig --name unicorn-store-spring-cluster --region eu-west-1 --role-arn " + workshopAdminRole.getRoleArn(),
+                            "aws eks update-kubeconfig --name unicorn-store-spring --region " + infrastructureStack.getRegion() + " --role-arn " + cluster.getKubectlRole().getRoleArn(),
                             "kubectl -n " + projectName + " patch deployment " + projectName + " --patch-file patch.yml"
                         )
                     )
@@ -552,7 +551,14 @@ public class UnicornStoreSpringEKS extends Construct {
             .timeout(Duration.minutes(60))
             .build();
 
-        PolicyStatement EksRoPolicy = PolicyStatement.Builder.create()
+        // SecurityGroup codeBuild2eksSg = SecurityGroup.Builder.create(scope, projectName + "-eks-codedeploy-sg")
+        //     .description("Access from CodeBuild to EKS cluster")
+        //     .allowAllOutbound(true)
+        //     .vpc(infrastructureStack.getVpc())
+        //     .build();
+        cluster.getClusterSecurityGroup().addIngressRule(codeBuild.getConnections().getSecurityGroups().get(0), Port.allTraffic(), "Allow access from CodeDeploy to EKS to use kubectl");
+
+        PolicyStatement EksReadOnlyPolicy = PolicyStatement.Builder.create()
             .effect(Effect.ALLOW)
             .actions(List.of(
                 "eks:DescribeNodegroup",
@@ -565,29 +571,29 @@ public class UnicornStoreSpringEKS extends Construct {
             .effect(Effect.ALLOW)
             .actions(List.of(
                 "sts:AssumeRole"))
-            .resources(List.of(workshopAdminRole.getRoleArn()))
+            .resources(List.of(cluster.getKubectlRole().getRoleArn()))
             .build();
 
-        codeBuild.addToRolePolicy(EksRoPolicy);
+        codeBuild.addToRolePolicy(EksReadOnlyPolicy);
         codeBuild.addToRolePolicy(CodeBuildSTSPolicy);
-        workshopAdminRole.grantAssumeRole(codeBuild.getGrantPrincipal());
+        cluster.getKubectlRole().grantAssumeRole(codeBuild.getGrantPrincipal());
 
-        Pipeline.Builder.create(scope, projectName +  "-pipeline-eks-deploy")
-            .pipelineName(projectName + "-eks-deploy")
+        Pipeline.Builder.create(scope, projectName +  "-pipeline-deploy-eks")
+            .pipelineName(projectName + "-deploy-eks")
             .crossAccountKeys(false)
             .stages(List.of(
                 StageProps.builder()
-                    .stageName("Source")
+                    .stageName("source")
                     .actions(List.of(
                             sourceAction
                         )
                     )
                 .build(),
                 StageProps.builder()
-                    .stageName("Deploy")
+                    .stageName("deploy")
                     .actions(List.of(
                         CodeBuildAction.Builder.create()
-                            .actionName("CodeBuild_deploy")
+                            .actionName("deploy-codebuild-kubectl")
                             .input(sourceOuput)
                             .project(codeBuild)
                             .runOrder(1)
@@ -618,7 +624,7 @@ public class UnicornStoreSpringEKS extends Construct {
         //     // }})
         //     .build();
 
-        // Rule rule = Rule.Builder.create(this, "rule")
+        // Rule rule = Rule.Builder.create(scope, projectName + "-rule-ecr")
         //     .eventPattern(EventPattern.builder()
         //         .source(List.of("aws.ecr"))
         //         .detailType(List.of("ECR Image Action"))

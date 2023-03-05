@@ -23,7 +23,7 @@ public class InfrastructureStack extends Stack {
 
         vpc = createUnicornVpc();
         Tags.of(vpc).add("unicorn", "true");
-        new CfnOutput(this, "arnUnicornVPC", CfnOutputProps.builder()
+        new CfnOutput(this, "arnUnicornStoreVPC", CfnOutputProps.builder()
                 .value(vpc.getVpcArn())
                 .build());
         databaseSecret = createDatabaseSecret();
@@ -31,11 +31,11 @@ public class InfrastructureStack extends Stack {
                 .value(databaseSecret.getSecretFullArn())
                 .build());
         database = createRDSPostgresInstance(vpc, databaseSecret);
-        new CfnOutput(this, "arnUnicornInstance", CfnOutputProps.builder()
+        new CfnOutput(this, "arnUnicornStoreDbInstance", CfnOutputProps.builder()
             .value(database.getInstanceArn())
             .build());
         eventBridge = createEventBus();
-        new CfnOutput(this, "arnUnicornEventBus", CfnOutputProps.builder()
+        new CfnOutput(this, "arnUnicornStoreEventBus", CfnOutputProps.builder()
             .value(eventBridge.getEventBusArn())
             .build());
         applicationSecurityGroup = new SecurityGroup(this, "ApplicationSecurityGroup",

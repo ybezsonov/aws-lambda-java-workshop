@@ -23,11 +23,10 @@ import software.constructs.Construct;
 import java.util.List;
 import java.util.Map;
 
-public class UnicornStoreSpringCI extends Construct {
+public class UnicornStoreCI extends Construct {
 
-    public UnicornStoreSpringCI(final Construct scope, final String id, InfrastructureStack infrastructureStack) {
+    public UnicornStoreCI(final Construct scope, final String id, InfrastructureStack infrastructureStack, final String projectName) {
         super(scope, id);
-        final String projectName = "unicorn-store-spring";
 
         software.amazon.awscdk.services.codecommit.Repository codeCommit =
             software.amazon.awscdk.services.codecommit.Repository.Builder.create(scope, projectName + "-codecommt")
@@ -60,8 +59,8 @@ public class UnicornStoreSpringCI extends Construct {
         final String ecrUri = ecr.getRepositoryUri().split("/")[0];
         final String imageName = ecr.getRepositoryUri().split("/")[1];
 
-        PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-build")
-            .projectName(projectName + "-build")
+        PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-build-ecr")
+            .projectName(projectName + "-build-ecr")
             .buildSpec(BuildSpec.fromSourceFilename("buildspec.yml"))
             .vpc(infrastructureStack.getVpc())
             .environment(BuildEnvironment.builder()
@@ -88,15 +87,15 @@ public class UnicornStoreSpringCI extends Construct {
 
         Artifact sourceOuput = Artifact.artifact(projectName + "-codecommit-artifact");
 
-        Pipeline.Builder.create(scope, projectName +  "-pipeline-build")
-            .pipelineName(projectName + "-build")
+        Pipeline.Builder.create(scope, projectName +  "-pipeline-build-ecr")
+            .pipelineName(projectName + "-build-ecr")
             .crossAccountKeys(false)
             .stages(List.of(
                 StageProps.builder()
-                    .stageName("Source")
+                    .stageName("source")
                     .actions(List.of(
                         CodeCommitSourceAction.Builder.create()
-                            .actionName("CodeCommit_Source")
+                            .actionName("source-codecommit")
                             .repository(codeCommit)
                             .output(sourceOuput)
                             .branch("main")
@@ -107,10 +106,10 @@ public class UnicornStoreSpringCI extends Construct {
                     )
                 .build(),
                 StageProps.builder()
-                    .stageName("Build")
+                    .stageName("build")
                     .actions(List.of(
                         CodeBuildAction.Builder.create()
-                            .actionName("CodeBuild_BuildDockerImage")
+                            .actionName("build-docker-image")
                             .input(sourceOuput)
                             .project(codeBuild)
                             .runOrder(1)

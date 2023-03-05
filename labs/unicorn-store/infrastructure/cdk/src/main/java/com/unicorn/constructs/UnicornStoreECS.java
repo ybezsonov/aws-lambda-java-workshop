@@ -41,11 +41,10 @@ import software.constructs.Construct;
 import java.util.List;
 import java.util.Map;
 
-public class UnicornStoreSpringECS extends Construct {
+public class UnicornStoreECS extends Construct {
 
-    public UnicornStoreSpringECS(final Construct scope, final String id, InfrastructureStack infrastructureStack) {
+    public UnicornStoreECS(final Construct scope, final String id, InfrastructureStack infrastructureStack, final String projectName) {
         super(scope, id);
-        final String projectName = "unicorn-store-spring";
 
         Cluster cluster = Cluster.Builder.create(scope, projectName + "-cluster")
             .clusterName(projectName)
@@ -62,7 +61,7 @@ public class UnicornStoreSpringECS extends Construct {
             .build();
 
         LogGroup logGroup = LogGroup.Builder.create(scope, projectName + "-log-group")
-            .logGroupName("/ecs/" + projectName)
+            .logGroupName("/aws/ecs/" + projectName)
             .removalPolicy(RemovalPolicy.DESTROY)
             .build();
 
@@ -104,7 +103,7 @@ public class UnicornStoreSpringECS extends Construct {
             .publicLoadBalancer(true)
             .build();
 
-        new CfnOutput(scope, "LoadBalancerURL", CfnOutputProps.builder()
+        new CfnOutput(scope, "UnicornStoreServiceURL", CfnOutputProps.builder()
             .value("http://" + loadBalancedFargateService.getLoadBalancer().getLoadBalancerDnsName())
             .build());
 
@@ -198,7 +197,7 @@ public class UnicornStoreSpringECS extends Construct {
         Artifact buildOuput = Artifact.artifact(projectName + "-ecs-artifact");
 
         EcrSourceAction sourceAction = EcrSourceAction.Builder.create()
-            .actionName("ECR_Source")
+            .actionName("source-ecr")
             .repository(ecr)
             .imageTag("latest")
             .output(sourceOuput)
@@ -206,13 +205,13 @@ public class UnicornStoreSpringECS extends Construct {
             .build();
 
         EcsDeployAction deployAction = EcsDeployAction.Builder.create()
-            .actionName("ECS_Deploy")
+            .actionName("deploy-ecs")
             .input(buildOuput)
             .service(loadBalancedFargateService.getService())
             .build();
 
-        PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-ecs-deploy")
-            .projectName(projectName + "-ecs-deploy")
+        PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-deploy-ecs")
+            .projectName(projectName + "-deploy-ecs")
             .vpc(infrastructureStack.getVpc())
             .environment(BuildEnvironment.builder()
                 .privileged(true)
@@ -253,22 +252,22 @@ public class UnicornStoreSpringECS extends Construct {
             .timeout(Duration.minutes(60))
             .build();
 
-        Pipeline.Builder.create(scope, projectName +  "-pipeline-ecs-deploy")
-            .pipelineName(projectName + "-ecs-deploy")
+        Pipeline.Builder.create(scope, projectName +  "-pipeline-deploy-ecs")
+            .pipelineName(projectName + "-deploy-ecs")
             .crossAccountKeys(false)
             .stages(List.of(
                 StageProps.builder()
-                    .stageName("Source")
+                    .stageName("source")
                     .actions(List.of(
                             sourceAction
                         )
                     )
                 .build(),
                 StageProps.builder()
-                    .stageName("Build")
+                    .stageName("build")
                     .actions(List.of(
                         CodeBuildAction.Builder.create()
-                            .actionName("CodeBuild_imagedefinitions")
+                            .actionName("build-imagedefinitions")
                             .input(sourceOuput)
                             .project(codeBuild)
                             .outputs(List.of(buildOuput))
@@ -278,7 +277,7 @@ public class UnicornStoreSpringECS extends Construct {
                     )
                 .build(),
                 StageProps.builder()
-                    .stageName("Deploy")
+                    .stageName("deploy")
                     .actions(List.of(
                             deployAction
                         )
