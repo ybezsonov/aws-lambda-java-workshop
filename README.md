@@ -1,3 +1,14 @@
+# Java on AWS Workshop
+## CI/CD ECS
+![CI/CD ECS](resources/java-id-ci-cd-ecs.png)
+
+## CI/CD EKS
+![CI/CD EKS](resources/java-id-ci-cd-eks.png)
+
+## X-Ray Java integration
+![X-Ray Java integration](resources/unicorn-store-spring-xray.png)
+
+# ---------------------------
 # Java on AWS Lambda Workshop
 
 This project contains the code for the Java on AWS Lambda workshop.
