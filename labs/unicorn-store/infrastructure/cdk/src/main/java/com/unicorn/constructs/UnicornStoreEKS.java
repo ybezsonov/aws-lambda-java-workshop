@@ -266,8 +266,8 @@ public class UnicornStoreEKS extends Construct {
             .build();
 
         ServiceAccountOptions appServiceAccountOptions = ServiceAccountOptions.builder()
+            .name(projectName)
             .namespace(projectName)
-            .name(projectName + "-sa")
             .build();
         ServiceAccount appServiceAccount = cluster.addServiceAccount(projectName + "-app-sa", appServiceAccountOptions);
         appServiceAccount.getNode().addDependency(appManifestNamespace);
@@ -305,7 +305,7 @@ public class UnicornStoreEKS extends Construct {
                         "auth", Map.of(
                             "jwt", Map.of(
                                 "serviceAccountRef", Map.of(
-                                    "name", projectName + "-sa"
+                                    "name", projectName
                                 )
                             )
                         )
