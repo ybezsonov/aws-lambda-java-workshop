@@ -59,6 +59,9 @@ public class UnicornStoreCI extends Construct {
         final String ecrUri = ecr.getRepositoryUri().split("/")[0];
         final String imageName = ecr.getRepositoryUri().split("/")[1];
 
+        // Alternative approaches for multi-architecture Docker images
+        // https://aws.amazon.com/blogs/devops/creating-multi-architecture-docker-images-to-support-graviton2-using-aws-codebuild-and-aws-codepipeline/
+        // https://github.com/aws-samples/aws-multiarch-container-build-pipeline
         PipelineProject codeBuild = PipelineProject.Builder.create(scope, projectName + "-codebuild-build-ecr")
             .projectName(projectName + "-build-ecr")
             .buildSpec(BuildSpec.fromSourceFilename("buildspec.yml"))

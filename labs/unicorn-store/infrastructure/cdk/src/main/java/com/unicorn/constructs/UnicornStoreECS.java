@@ -8,8 +8,11 @@ import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecs.AwsLogDriver;
 import software.amazon.awscdk.services.ecs.Cluster;
 import software.amazon.awscdk.services.ecs.ContainerImage;
+import software.amazon.awscdk.services.ecs.CpuArchitecture;
 import software.amazon.awscdk.services.ecs.ContainerDefinition;
 import software.amazon.awscdk.services.ecs.DeploymentCircuitBreaker;
+import software.amazon.awscdk.services.ecs.OperatingSystemFamily;
+import software.amazon.awscdk.services.ecs.RuntimePlatform;
 import software.amazon.awscdk.services.ecs.ContainerDefinitionOptions;
 import software.amazon.awscdk.services.ecs.ContainerDependency;
 import software.amazon.awscdk.services.ecs.ContainerDependencyCondition;
@@ -76,6 +79,11 @@ public class UnicornStoreECS extends Construct {
             .serviceName(projectName)
             .memoryLimitMiB(2048)
             .cpu(1024)
+            .runtimePlatform(RuntimePlatform.builder()
+                .cpuArchitecture(CpuArchitecture.ARM64)
+                // .cpuArchitecture(CpuArchitecture.X86_64)
+                .operatingSystemFamily(OperatingSystemFamily.LINUX)
+                .build())
             .desiredCount(1)
             .taskImageOptions(ApplicationLoadBalancedTaskImageOptions.builder()
                 .family(projectName)
