@@ -6,6 +6,7 @@ import software.amazon.awscdk.services.eks.KubernetesVersion;
 import software.amazon.awscdk.services.eks.ClusterLoggingTypes;
 import software.amazon.awscdk.services.eks.FargateProfile;
 import software.amazon.awscdk.services.eks.FargateProfileOptions;
+import software.amazon.awscdk.services.eks.HelmChart;
 import software.amazon.awscdk.services.eks.HelmChartOptions;
 import software.amazon.awscdk.services.eks.AlbControllerOptions;
 import software.amazon.awscdk.services.eks.NodegroupOptions;
@@ -102,19 +103,29 @@ public class UnicornStoreEKS extends Construct {
         cluster.getAwsAuth().addRoleMapping(adminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
         cluster.getAwsAuth().addRoleMapping(workshopAdminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
 
-        cluster.addNodegroupCapacity("managed-node-group", NodegroupOptions.builder()
-            .nodegroupName("managed-node-group")
+        cluster.addNodegroupCapacity("managed-node-group-arm64", NodegroupOptions.builder()
+            .nodegroupName("managed-node-group-arm64")
+            .capacityType(CapacityType.ON_DEMAND)
+            .instanceTypes(List.of(new InstanceType("m6g.medium")))
+            .minSize(1)
+            .desiredSize(1)
+            .maxSize(2)
+            .build());
+
+        cluster.addNodegroupCapacity("managed-node-group-x64", NodegroupOptions.builder()
+            .nodegroupName("managed-node-group-x64")
             .capacityType(CapacityType.ON_DEMAND)
             .instanceTypes(List.of(new InstanceType("m5.large")))
             .minSize(1)
             .desiredSize(1)
-            .maxSize(4)
-            .amiType(NodegroupAmiType.AL2_X86_64)
+            .maxSize(2)
             .build());
 
-        FargateProfile fargateProfile = cluster.addFargateProfile(projectName + "-fargate-profile", FargateProfileOptions.builder()
-            .selectors(List.of(Selector.builder().namespace(projectName + "*").build()))
-            .fargateProfileName(projectName + "-fargate-profile")
+        // EKS on Fargate doesn't support ARM64. Can be used for x86_x64 workloads
+        // https://docs.aws.amazon.com/eks/latest/userguide/fargate.html
+        FargateProfile fargateProfile = cluster.addFargateProfile("workloads" + "-fargate-profile", FargateProfileOptions.builder()
+            .selectors(List.of(Selector.builder().namespace("workloads" + "*").build()))
+            .fargateProfileName("workloads" + "-fargate-profile")
             .vpc(infrastructureStack.getVpc())
             .build());
 
@@ -279,7 +290,7 @@ public class UnicornStoreEKS extends Construct {
 
         infrastructureStack.getDatabaseSecret().grantRead(appServiceAccount);
 
-        cluster.addHelmChart("external-secrets-operator", HelmChartOptions.builder()
+        HelmChart externalSecretChart = cluster.addHelmChart("external-secrets-operator", HelmChartOptions.builder()
             .repository("https://charts.external-secrets.io")
             .chart("external-secrets")
             .release("external-secrets")
@@ -319,6 +330,7 @@ public class UnicornStoreEKS extends Construct {
             .manifest(List.of(secretStore))
             .build();
         secretStoreManifest.getNode().addDependency(appServiceAccount);
+        secretStoreManifest.getNode().addDependency(externalSecretChart);
 
         Map<String, Object> externalSecret = Map.of(
             "apiVersion", "external-secrets.io/v1beta1",
@@ -395,12 +407,14 @@ public class UnicornStoreEKS extends Construct {
                         "labels", Map.of(
                             "app", projectName)),
                     "spec", Map.of(
+                        "nodeSelector", Map.of(
+                            "kubernetes.io/arch", "arm64"),
                         "serviceAccountName", appServiceAccount.getServiceAccountName(),
                         "containers", List.of(Map.of(
                             "resources", Map.of(
                                 "requests", Map.of(
-                                    "cpu", "1",
-                                    "memory", "2Gi")),
+                                    "cpu", "0.5",
+                                    "memory", "1Gi")),
                             "name", projectName,
                             "image", infrastructureStack.getAccount()
                                     + ".dkr.ecr."
@@ -551,12 +565,7 @@ public class UnicornStoreEKS extends Construct {
             .timeout(Duration.minutes(60))
             .build();
 
-        // SecurityGroup codeBuild2eksSg = SecurityGroup.Builder.create(scope, projectName + "-eks-codedeploy-sg")
-        //     .description("Access from CodeBuild to EKS cluster")
-        //     .allowAllOutbound(true)
-        //     .vpc(infrastructureStack.getVpc())
-        //     .build();
-        cluster.getClusterSecurityGroup().addIngressRule(codeBuild.getConnections().getSecurityGroups().get(0), Port.allTraffic(), "Allow access from CodeDeploy to EKS to use kubectl");
+        // codeBuild.getNode().addDependency(cluster);
 
         PolicyStatement EksReadOnlyPolicy = PolicyStatement.Builder.create()
             .effect(Effect.ALLOW)
@@ -577,6 +586,14 @@ public class UnicornStoreEKS extends Construct {
         codeBuild.addToRolePolicy(EksReadOnlyPolicy);
         codeBuild.addToRolePolicy(CodeBuildSTSPolicy);
         cluster.getKubectlRole().grantAssumeRole(codeBuild.getGrantPrincipal());
+
+        // SecurityGroup codeBuild2eksSg = SecurityGroup.Builder.create(scope, projectName + "-eks-codedeploy-sg")
+        //     .description("Access from CodeBuild to EKS cluster")
+        //     .allowAllOutbound(true)
+        //     .vpc(infrastructureStack.getVpc())
+        //     .build();
+        // cluster.getClusterSecurityGroup().addIngressRule(codeBuild.getConnections().getSecurityGroups().get(0), Port.allTraffic(), "Allow access from CodeDeploy to EKS to use kubectl");
+        codeBuild.getConnections().allowTo(cluster, Port.allTraffic());
 
         Pipeline.Builder.create(scope, projectName +  "-pipeline-deploy-eks")
             .pipelineName(projectName + "-deploy-eks")
