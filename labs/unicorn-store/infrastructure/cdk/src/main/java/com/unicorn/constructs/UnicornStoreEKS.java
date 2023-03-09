@@ -103,23 +103,24 @@ public class UnicornStoreEKS extends Construct {
         cluster.getAwsAuth().addRoleMapping(adminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
         cluster.getAwsAuth().addRoleMapping(workshopAdminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
 
+        // default node group is ARM64
         cluster.addNodegroupCapacity("managed-node-group-arm64", NodegroupOptions.builder()
             .nodegroupName("managed-node-group-arm64")
             .capacityType(CapacityType.ON_DEMAND)
             .instanceTypes(List.of(new InstanceType("m6g.medium")))
             .minSize(1)
-            .desiredSize(1)
+            .desiredSize(2)
             .maxSize(2)
             .build());
 
-        cluster.addNodegroupCapacity("managed-node-group-x64", NodegroupOptions.builder()
-            .nodegroupName("managed-node-group-x64")
-            .capacityType(CapacityType.ON_DEMAND)
-            .instanceTypes(List.of(new InstanceType("m5.large")))
-            .minSize(1)
-            .desiredSize(1)
-            .maxSize(2)
-            .build());
+        // cluster.addNodegroupCapacity("managed-node-group-x64", NodegroupOptions.builder()
+        //     .nodegroupName("managed-node-group-x64")
+        //     .capacityType(CapacityType.ON_DEMAND)
+        //     .instanceTypes(List.of(new InstanceType("m5.large")))
+        //     .minSize(1)
+        //     .desiredSize(1)
+        //     .maxSize(2)
+        //     .build());
 
         // EKS on Fargate doesn't support ARM64. Can be used for x86_x64 workloads
         // https://docs.aws.amazon.com/eks/latest/userguide/fargate.html
