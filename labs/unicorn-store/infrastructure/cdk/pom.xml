@@ -54,17 +54,17 @@
         <dependency>
             <groupId>org.cdk8s</groupId>
             <artifactId>cdk8s</artifactId>
-            <version>2.7.10</version>
+            <version>2.7.25</version>
         </dependency>
         <dependency>
             <groupId>org.cdk8s</groupId>
-            <artifactId>cdk8s-plus-24</artifactId>
-            <version>2.4.34</version>
+            <artifactId>cdk8s-plus-25</artifactId>
+            <version>2.4.47</version>
         </dependency>
         <dependency>
             <groupId>software.amazon.awscdk</groupId>
-            <artifactId>cdk-lambda-layer-kubectl-v24</artifactId>
-            <version>2.0.116</version>
+            <artifactId>cdk-lambda-layer-kubectl-v25</artifactId>
+            <version>2.0.3</version>
         </dependency>
         <dependency>
           <groupId>org.junit.jupiter</groupId>

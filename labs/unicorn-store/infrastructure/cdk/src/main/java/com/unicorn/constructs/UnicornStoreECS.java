@@ -121,7 +121,6 @@ public class UnicornStoreECS extends Construct {
         // https://raw.githubusercontent.com/aws-observability/aws-otel-collector/main/deployment-template/ecs/aws-otel-fargate-sidecar-deployment-cfn.yaml
         PolicyStatement executionRolePolicy = PolicyStatement.Builder.create()
             .effect(Effect.ALLOW)
-            //.principals(List.of(new AnyPrincipal()))
             .actions(List.of(
                 "ecr:GetAuthorizationToken",
                 "ecr:BatchCheckLayerAvailability",
@@ -134,7 +133,6 @@ public class UnicornStoreECS extends Construct {
 
         PolicyStatement AWSOpenTelemetryPolicy = PolicyStatement.Builder.create()
             .effect(Effect.ALLOW)
-            //.principals(List.of(new AnyPrincipal()))
             .actions(List.of(
                 "logs:PutLogEvents",
                 "logs:CreateLogGroup",
@@ -168,17 +166,6 @@ public class UnicornStoreECS extends Construct {
         loadBalancedFargateService.getTaskDefinition().getExecutionRole().addManagedPolicy(
             ManagedPolicy.fromManagedPolicyArn(scope, projectName + "AmazonSSMReadOnlyAccess",
                 "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"));
-
-        // https://docs.aws.amazon.com/xray/latest/devguide/xray-daemon-ecs.html
-        // ContainerDefinition xray = loadBalancedFargateService.getTaskDefinition().addContainer("xray-daemon", ContainerDefinitionOptions.builder()
-        //     .image(ContainerImage.fromRegistry("amazon/aws-xray-daemon"))
-        //     .logging(logging)
-        //     .build());
-
-        // xray.addPortMappings(PortMapping.builder()
-        //     .containerPort(2000)
-        //     .protocol(Protocol.UDP)
-        //     .build());
 
         // https://docs.aws.amazon.com/xray/latest/devguide/xray-java-opentel-sdk.html
         loadBalancedFargateService.getTaskDefinition().addContainer("otel-collector", ContainerDefinitionOptions.builder()
