@@ -1,8 +1,8 @@
 package com.unicorn.constructs;
 
 import com.unicorn.core.InfrastructureStack;
-import com.unicorn.constructs.eks.UnicornStoreEKSaddFargate;
 import com.unicorn.constructs.eks.UnicornStoreEKSaddExternalSecrets;
+import com.unicorn.constructs.eks.UnicornStoreEKSaddFargate;
 import com.unicorn.constructs.eks.UnicornStoreEKSaddPipeline;
 import com.unicorn.constructs.eks.UnicornStoreEKSaddApp;
 
@@ -40,92 +40,78 @@ import java.util.Map;
 
 public class UnicornStoreEKS extends Construct {
 
-    public UnicornStoreEKS(final Construct scope, final String id, InfrastructureStack infrastructureStack, final String projectName) {
-            super(scope, id);
+    public UnicornStoreEKS(final Construct scope, final String id,
+            InfrastructureStack infrastructureStack, final String projectName) {
+        super(scope, id);
 
         // Create the EKS cluster
-        var cluster = Cluster.Builder.create(scope, projectName + "-cluster").clusterName(projectName)
-            .clusterName(projectName)
-            .vpc(infrastructureStack.getVpc())
-            .vpcSubnets(List.of(SubnetSelection.builder().subnetType(SubnetType.PRIVATE_WITH_EGRESS).build()))
-            .clusterLogging(Arrays.asList(ClusterLoggingTypes.API,
-                ClusterLoggingTypes.AUDIT,
-                ClusterLoggingTypes.AUTHENTICATOR,
-                ClusterLoggingTypes.CONTROLLER_MANAGER,
-                ClusterLoggingTypes.SCHEDULER))
-            .version(KubernetesVersion.of("1.25"))
-            .kubectlLayer(new KubectlV25Layer(scope, projectName + "-cluster-kubectl-layer"))
-            .albController(AlbControllerOptions.builder()
-                .version(AlbControllerVersion.V2_4_1)
-                .build())
-            .defaultCapacity(0)
-            .defaultCapacityInstance(InstanceType.of(InstanceClass.M5, InstanceSize.LARGE))
-            .build();
+        var cluster = Cluster.Builder.create(scope, projectName + "-cluster")
+                .clusterName(projectName).clusterName(projectName).vpc(infrastructureStack.getVpc())
+                .vpcSubnets(List.of(SubnetSelection.builder()
+                        .subnetType(SubnetType.PRIVATE_WITH_EGRESS).build()))
+                .clusterLogging(Arrays.asList(ClusterLoggingTypes.API, ClusterLoggingTypes.AUDIT,
+                        ClusterLoggingTypes.AUTHENTICATOR, ClusterLoggingTypes.CONTROLLER_MANAGER,
+                        ClusterLoggingTypes.SCHEDULER))
+                .version(KubernetesVersion.of("1.25"))
+                .kubectlLayer(new KubectlV25Layer(scope, projectName + "-cluster-kubectl-layer"))
+                .albController(
+                        AlbControllerOptions.builder().version(AlbControllerVersion.V2_4_1).build())
+                .defaultCapacity(0)
+                .defaultCapacityInstance(InstanceType.of(InstanceClass.M5, InstanceSize.LARGE))
+                .build();
 
         // AWS Console role to manage EKS cluster via UI
         IRole adminRole = Role.fromRoleArn(scope, projectName + "-admin-role",
-            "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/Admin",
-            FromRoleArnOptions.builder().mutable(false)
-            .build());
+                "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/Admin",
+                FromRoleArnOptions.builder().mutable(false).build());
         // Cloud9 EC2 instance role to manage EKS cluster via kubectl
         IRole workshopAdminRole = Role.fromRoleArn(scope, projectName + "-workshop-admin-role",
-            "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/workshop-admin",
-            FromRoleArnOptions.builder().mutable(false)
-            .build());
+                "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/workshop-admin",
+                FromRoleArnOptions.builder().mutable(false).build());
 
         // Give Admin access to the cluster
-        cluster.getAwsAuth().addRoleMapping(adminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
-        cluster.getAwsAuth().addRoleMapping(workshopAdminRole, AwsAuthMapping.builder().groups(List.of("system:masters")).build());
+        cluster.getAwsAuth().addRoleMapping(adminRole,
+                AwsAuthMapping.builder().groups(List.of("system:masters")).build());
+        cluster.getAwsAuth().addRoleMapping(workshopAdminRole,
+                AwsAuthMapping.builder().groups(List.of("system:masters")).build());
 
         // default node group is ARM64
         // Application can use
         // nodeSelector:
-        //   kubernetes.io/arch: "arm64"
-        cluster.addNodegroupCapacity("managed-node-group-arm64", NodegroupOptions.builder()
-            .nodegroupName("managed-node-group-arm64")
-            .capacityType(CapacityType.ON_DEMAND)
-            .instanceTypes(List.of(new InstanceType("m6g.medium")))
-            .minSize(1)
-            .desiredSize(2)
-            .maxSize(2)
-            .build());
+        // kubernetes.io/arch: "arm64"
+        cluster.addNodegroupCapacity("managed-node-group-arm64",
+                NodegroupOptions.builder().nodegroupName("managed-node-group-arm64")
+                        .capacityType(CapacityType.ON_DEMAND)
+                        .instanceTypes(List.of(new InstanceType("m6g.large"))).minSize(1)
+                        .desiredSize(1).maxSize(2).build());
 
         // Additional x86_x64 Managed Node Group
         // Application can use
         // nodeSelector:
-        //   kubernetes.io/arch: "amd64"
-        cluster.addNodegroupCapacity("managed-node-group-x64", NodegroupOptions.builder()
-            .nodegroupName("managed-node-group-x64")
-            .capacityType(CapacityType.ON_DEMAND)
-            .instanceTypes(List.of(new InstanceType("m5.large")))
-            .minSize(0)
-            .desiredSize(0)
-            .maxSize(2)
-            .build());
+        // kubernetes.io/arch: "amd64"
+        cluster.addNodegroupCapacity("managed-node-group-x64",
+                NodegroupOptions.builder().nodegroupName("managed-node-group-x64")
+                        .capacityType(CapacityType.ON_DEMAND)
+                        .instanceTypes(List.of(new InstanceType("m5.large"))).minSize(0)
+                        .desiredSize(0).maxSize(2).build());
 
         // EKS on Fargate doesn't support ARM64. Can be used for x86_x64 workloads
-        new UnicornStoreEKSaddFargate(this, projectName + "-fargate-profile", infrastructureStack,
-            cluster, projectName);
+        // new UnicornStoreEKSaddFargate(this, projectName + "-fargate-profile",
+        // infrastructureStack,
+        // cluster, projectName);
 
         // App namespace
-        Map<String, Object> appNamespace = Map.of(
-            "apiVersion", "v1",
-            "kind", "Namespace",
-            "metadata", Map.of(
-                "name", projectName,
-                "labels", Map.of(
-                    "app", projectName)));
+        Map<String, Object> appNamespace = Map.of("apiVersion", "v1", "kind", "Namespace",
+                "metadata", Map.of("name", projectName, "labels", Map.of("app", projectName)));
 
-        KubernetesManifest appManifestNamespace = KubernetesManifest.Builder.create(scope, projectName + "-app-manifest-ns")
-            .cluster(cluster)
-            .manifest(List.of(appNamespace))
-            .build();
+        KubernetesManifest appManifestNamespace =
+                KubernetesManifest.Builder.create(scope, projectName + "-app-manifest-ns")
+                        .cluster(cluster).manifest(List.of(appNamespace)).build();
 
-        ServiceAccountOptions appServiceAccountOptions = ServiceAccountOptions.builder()
-            .name(projectName)
-            .namespace(projectName)
-            .build();
-        ServiceAccount appServiceAccount = cluster.addServiceAccount(projectName + "-app-sa", appServiceAccountOptions);
+        ServiceAccountOptions appServiceAccountOptions =
+                ServiceAccountOptions.builder().name(projectName).namespace(projectName).build();
+        ServiceAccount appServiceAccount =
+                cluster.addServiceAccount(projectName + "-app-sa", appServiceAccountOptions);
         appServiceAccount.getNode().addDependency(appManifestNamespace);
 
         // Define access rights to AWS infrastructure for Service Account
@@ -135,40 +121,30 @@ public class UnicornStoreEKS extends Construct {
         // Using AWS SecretManager with External Secret Operator
         // Sync password from to k8s secret
         new UnicornStoreEKSaddExternalSecrets(this, projectName + "-external-secrets",
-            infrastructureStack, cluster, appServiceAccount, projectName);
+                infrastructureStack, cluster, appServiceAccount, projectName);
 
         // https://aws.amazon.com/blogs/opensource/migrating-x-ray-tracing-to-aws-distro-for-opentelemetry/
         PolicyStatement AWSOpenTelemetryPolicy = PolicyStatement.Builder.create()
-            .effect(Effect.ALLOW)
-            .actions(List.of(
-                "logs:PutLogEvents",
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:DescribeLogStreams",
-                "logs:DescribeLogGroups",
-                "logs:PutRetentionPolicy",
-                "xray:PutTraceSegments",
-                "xray:PutTelemetryRecords",
-                "xray:GetSamplingRules",
-                "xray:GetSamplingTargets",
-                "xray:GetSamplingStatisticSummaries",
-                "cloudwatch:PutMetricData",
-                "ssm:GetParameters"))
-            .resources(List.of("*"))
-            .build();
+                .effect(Effect.ALLOW)
+                .actions(List.of("logs:PutLogEvents", "logs:CreateLogGroup", "logs:CreateLogStream",
+                        "logs:DescribeLogStreams", "logs:DescribeLogGroups",
+                        "logs:PutRetentionPolicy", "xray:PutTraceSegments",
+                        "xray:PutTelemetryRecords", "xray:GetSamplingRules",
+                        "xray:GetSamplingTargets", "xray:GetSamplingStatisticSummaries",
+                        "cloudwatch:PutMetricData", "ssm:GetParameters"))
+                .resources(List.of("*")).build();
         appServiceAccount.getGrantPrincipal().addToPrincipalPolicy(AWSOpenTelemetryPolicy);
 
         // Create and deploy App to EKS cluster
-        var appStack = new UnicornStoreEKSaddApp(this, projectName + "-app-manifest",
-            infrastructureStack, cluster, appServiceAccount, projectName);
-        new CfnOutput(scope, "UnicornStoreServiceURL", CfnOutputProps.builder()
-            .exportName("UnicornStoreServiceURL")
-            .value("http://" + appStack.getUnicornStoreServiceURL())
-            .build());
+        // var appStack = new UnicornStoreEKSaddApp(this, projectName + "-app-manifest",
+        // infrastructureStack, cluster, appServiceAccount, projectName);
+        // new CfnOutput(scope, "UnicornStoreServiceURL",
+        // CfnOutputProps.builder().exportName("UnicornStoreServiceURL")
+        // .value("http://" + appStack.getUnicornStoreServiceURL()).build());
 
-        // Add Continious Deployment pipeline from ECR to EKS
+        // Add Continuous Deployment pipeline from ECR to EKS
         // using AWS Codepipeline, Codebuild and kubectl
-        new UnicornStoreEKSaddPipeline(this, projectName + "-pipeline",
-            infrastructureStack, cluster, projectName);
+        // new UnicornStoreEKSaddPipeline(this, projectName + "-pipeline",
+        // infrastructureStack, cluster, projectName);
     }
 }

@@ -8,11 +8,9 @@ import software.constructs.Construct;
 public class UnicornStoreCIStack extends Stack {
 
     public UnicornStoreCIStack(final Construct scope, final String id, final StackProps props,
-                             final InfrastructureStack infrastructureStack,
-                             final String projectName) {
+            final InfrastructureStack infrastructureStack, final String projectName) {
         super(scope, id, props);
 
         new UnicornStoreCI(this, id, infrastructureStack, projectName);
     }
 }
-

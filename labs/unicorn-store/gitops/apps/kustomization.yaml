@@ -1,0 +1,48 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: unicorn-store-spring
+configMapGenerator:
+- name: unicorn-store-spring-env
+  files:
+  - env_unicorn_store_spring_image
+  - env_spring_datasource_url
+  - env_aws_region
+replacements:
+- source:
+    kind: ConfigMap
+    name: unicorn-store-spring-env
+    fieldPath: data.env_unicorn_store_spring_image
+    version: v1
+  targets:
+  - select:
+      kind: Deployment
+      name: unicorn-store-spring
+      namespace: unicorn-store-spring
+    fieldPaths:
+    - spec.template.spec.containers.[name=unicorn-store-spring].image
+- source:
+    kind: ConfigMap
+    name: unicorn-store-spring-env
+    fieldPath: data.env_spring_datasource_url
+    version: v1
+  targets:
+  - select:
+      kind: Deployment
+      name: unicorn-store-spring
+      namespace: unicorn-store-spring
+    fieldPaths:
+    - spec.template.spec.containers.[name=unicorn-store-spring].env.[name=SPRING_DATASOURCE_URL].value
+- source:
+    kind: ConfigMap
+    name: unicorn-store-spring-env
+    fieldPath: data.env_aws_region
+    version: v1
+  targets:
+  - select:
+      kind: Deployment
+      name: unicorn-store-spring
+      namespace: unicorn-store-spring
+    fieldPaths:
+    - spec.template.spec.containers.[name=unicorn-store-spring].env.[name=S3_REGION].value
+resources:
+- unicorn-store-spring

@@ -7,11 +7,9 @@ import software.constructs.Construct;
 
 public class UnicornStoreEKSStack extends Stack {
     public UnicornStoreEKSStack(final Construct scope, final String id, final StackProps props,
-                             final InfrastructureStack infrastructureStack,
-                             final String projectName) {
+            final InfrastructureStack infrastructureStack, final String projectName) {
         super(scope, id, props);
 
         new UnicornStoreEKS(this, id, infrastructureStack, projectName);
     }
 }
-
