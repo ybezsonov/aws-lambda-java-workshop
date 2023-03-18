@@ -11,11 +11,9 @@ mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/
 echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
 kubectl version --short --client
 
-# install kustomize
-curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
-
 export GITOPS_USER=unicorn-store-spring-gitops
 export GITOPSC_REPO_NAME=unicorn-store-spring-gitops
+export CC_POLICY_ARN=$(aws iam list-policies --query 'Policies[?PolicyName==`AWSCodeCommitPowerUser`].{ARN:Arn}' --output text)
 
 aws iam detach-user-policy --user-name $GITOPS_USER --policy-arn $CC_POLICY_ARN
 export SSC_ID=$(aws iam list-service-specific-credentials --user-name $GITOPS_USER --query 'ServiceSpecificCredentials[0].ServiceSpecificCredentialId' --output text)
@@ -24,7 +22,6 @@ aws iam delete-user --user-name $GITOPS_USER
 aws codecommit delete-repository --repository-name $GITOPSC_REPO_NAME
 
 aws iam create-user --user-name $GITOPS_USER
-export CC_POLICY_ARN=$(aws iam list-policies --query 'Policies[?PolicyName==`AWSCodeCommitPowerUser`].{ARN:Arn}' --output text)
 aws iam attach-user-policy --user-name $GITOPS_USER --policy-arn $CC_POLICY_ARN
 
 aws codecommit create-repository --repository-name $GITOPSC_REPO_NAME --repository-description "GitOps repository"
@@ -53,13 +50,15 @@ git clone ${GITOPS_REPO_URL}
 rsync -av aws-lambda-java-workshop/labs/unicorn-store/software/unicorn-store-spring/gitops/ "${url##*/}"
 cd "${GITOPS_REPO_URL##*/}"
 
-echo -n $(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
-  --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksAwsRegion`].OutputValue' --output text) > ./apps/env_aws_region
-echo -n $(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
-  --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksDatabaseJDBCConnectionString`].OutputValue' --output text) > ./apps/env_spring_datasource_url
+export S3_REGION=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
+  --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksAwsRegion`].OutputValue' --output text)
+export SPRING_DATASOURCE_URL=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
+  --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksDatabaseJDBCConnectionString`].OutputValue' --output text)
 export ECR_URI=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
   --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksRepositoryUri`].OutputValue' --output text)
-echo -n $ECR_URI:latest > ./apps/env_unicorn_store_spring_image
+
+envsubst < ./apps/deployment.yaml > ./apps/deployment_new.yaml
+mv ./apps/deployment_new.yaml ./apps/deployment.yaml
 
 git add . && git commit -m "initial commit" && git push
 
@@ -123,11 +122,9 @@ spec:
     strategy: Setters
 EOF
 
-date +%Y%m%d%H%M%S
-
 popd
 
 # flux get kustomization --watch
-kubectl -n unicorn-store-spring get all
-kubectl get events -n unicorn-store-spring
+# kubectl -n unicorn-store-spring get all
+# kubectl get events -n unicorn-store-spring
 echo "App URL: http://$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')"

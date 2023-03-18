@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: unicorn-store-spring
+  namespace: unicorn-store-spring
   labels:
     app: unicorn-store-spring
 spec:
@@ -24,7 +25,7 @@ spec:
             limits:
               cpu: "0.5"
               memory: "1Gi"
-          image: "${UNICORN_STORE_SPRING_IMAGE}"
+          image: ${ECR_URI}:latest # {"$imagepolicy": "unicorn-store-spring:unicorn-store-spring"}
           env:
             - name: SPRING_DATASOURCE_PASSWORD
               valueFrom:
@@ -33,9 +34,9 @@ spec:
                   key: "password"
                   optional: false
             - name: SPRING_DATASOURCE_URL
-              value: "${SPRING_DATASOURCE_URL}"
+              value: ${SPRING_DATASOURCE_URL}
             - name: S3_REGION
-              value: "${AWS_REGION}"
+              value: ${S3_REGION}
             - name: SPRING_DATASOURCE_HIKARI_maximumPoolSize
               value: "1"
             - name: OTEL_OTLP_ENDPOINT

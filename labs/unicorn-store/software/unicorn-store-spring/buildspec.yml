@@ -18,7 +18,7 @@ phases:
       - echo Logging in to Amazon ECR...
       - aws --version
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-8)
-      - IMAGE_TAG=i${COMMIT_HASH:=latest}
+      - IMAGE_TAG=i$(date +%Y%m%d%H%M%S)-${COMMIT_HASH:=latest}
       - echo ECR_URI=$ECR_URI
       - echo IMAGE_NAME=$IMAGE_NAME
       - echo COMMIT_HASH=$COMMIT_HASH
