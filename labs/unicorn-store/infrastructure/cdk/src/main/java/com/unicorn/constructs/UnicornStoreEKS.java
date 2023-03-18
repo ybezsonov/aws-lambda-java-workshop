@@ -28,6 +28,8 @@ import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.FromRoleArnOptions;
 import software.amazon.awscdk.cdk.lambdalayer.kubectl.v25.KubectlV25Layer;
+import software.amazon.awscdk.services.ecr.IRepository;
+import software.amazon.awscdk.services.ecr.Repository;
 
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.CfnOutput;
@@ -83,17 +85,17 @@ public class UnicornStoreEKS extends Construct {
                 NodegroupOptions.builder().nodegroupName("managed-node-group-arm64")
                         .capacityType(CapacityType.ON_DEMAND)
                         .instanceTypes(List.of(new InstanceType("m6g.large"))).minSize(1)
-                        .desiredSize(1).maxSize(2).build());
+                        .desiredSize(2).maxSize(4).build());
 
         // Additional x86_x64 Managed Node Group
         // Application can use
         // nodeSelector:
         // kubernetes.io/arch: "amd64"
-        cluster.addNodegroupCapacity("managed-node-group-x64",
-                NodegroupOptions.builder().nodegroupName("managed-node-group-x64")
-                        .capacityType(CapacityType.ON_DEMAND)
-                        .instanceTypes(List.of(new InstanceType("m5.large"))).minSize(0)
-                        .desiredSize(0).maxSize(2).build());
+        // cluster.addNodegroupCapacity("managed-node-group-x64",
+        // NodegroupOptions.builder().nodegroupName("managed-node-group-x64")
+        // .capacityType(CapacityType.ON_DEMAND)
+        // .instanceTypes(List.of(new InstanceType("m5.large"))).minSize(0)
+        // .desiredSize(0).maxSize(2).build());
 
         // EKS on Fargate doesn't support ARM64. Can be used for x86_x64 workloads
         // new UnicornStoreEKSaddFargate(this, projectName + "-fargate-profile",
@@ -142,9 +144,23 @@ public class UnicornStoreEKS extends Construct {
         // CfnOutputProps.builder().exportName("UnicornStoreServiceURL")
         // .value("http://" + appStack.getUnicornStoreServiceURL()).build());
 
-        // Add Continuous Deployment pipeline from ECR to EKS
+        // Add Continuous Deployment pipeline from ECR to EKS using CodeBuild and kubectl
         // using AWS Codepipeline, Codebuild and kubectl
         // new UnicornStoreEKSaddPipeline(this, projectName + "-pipeline",
         // infrastructureStack, cluster, projectName);
+
+        new CfnOutput(scope, "UnicornStoreEksAwsRegion",
+                CfnOutputProps.builder().value(infrastructureStack.getRegion()).build());
+        new CfnOutput(scope, "UnicornStoreEksDatabaseJDBCConnectionString", CfnOutputProps.builder()
+                .value(infrastructureStack.getDatabaseJDBCConnectionString()).build());
+        final IRepository ecrRepo =
+                Repository.fromRepositoryName(scope, projectName + "-ecr-repo", projectName);
+        new CfnOutput(scope, "UnicornStoreEksRepositoryUri",
+                CfnOutputProps.builder().value(ecrRepo.getRepositoryUri()).build());
+        final String kubeconfigString = "aws eks update-kubeconfig --name " + projectName
+                + " --region " + infrastructureStack.getRegion() + " --role-arn "
+                + cluster.getKubectlRole().getRoleArn();
+        new CfnOutput(scope, "UnicornStoreEksKubeconfig",
+                CfnOutputProps.builder().value(kubeconfigString).build());
     }
 }
