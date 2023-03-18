@@ -1,5 +1,5 @@
 #bin/sh
-pushd infrastructure/cdk
+cd ~/environment/aws-lambda-java-workshop/labs/unicorn-store
 
 for x in `aws ecr list-images --repository-name unicorn-store-spring --query 'imageIds[*][imageDigest]' --output text`; do aws ecr batch-delete-image --repository-name unicorn-store-spring --image-ids imageDigest=$x; done
 for x in `aws ecr list-images --repository-name unicorn-store-spring --query 'imageIds[*][imageDigest]' --output text`; do aws ecr batch-delete-image --repository-name unicorn-store-spring --image-ids imageDigest=$x; done
@@ -7,6 +7,7 @@ for x in `aws ecr list-images --repository-name unicorn-store-spring --query 'im
 kubectl delete namespace unicorn-store-spring
 flux uninstall --silent
 
+pushd infrastructure/cdk
 cdk destroy UnicornStoreSpringEKS --force
 
 export GITOPS_USER=unicorn-store-spring-gitops
@@ -22,4 +23,5 @@ aws codecommit delete-repository --repository-name $GITOPSC_REPO_NAME
 cdk destroy UnicornStoreSpringECS --force
 cdk destroy UnicornStoreSpringCI --force
 cdk destroy UnicornStoreInfrastructure --force
+
 popd

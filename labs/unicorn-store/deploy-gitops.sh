@@ -1,6 +1,7 @@
 #bin/sh
 
 # install Flux
+pushd ../../..
 cd ~/environment
 curl -s https://fluxcd.io/install.sh | sudo bash
 # install kubectl
@@ -14,12 +15,6 @@ kubectl version --short --client
 export GITOPS_USER=unicorn-store-spring-gitops
 export GITOPSC_REPO_NAME=unicorn-store-spring-gitops
 export CC_POLICY_ARN=$(aws iam list-policies --query 'Policies[?PolicyName==`AWSCodeCommitPowerUser`].{ARN:Arn}' --output text)
-
-aws iam detach-user-policy --user-name $GITOPS_USER --policy-arn $CC_POLICY_ARN
-export SSC_ID=$(aws iam list-service-specific-credentials --user-name $GITOPS_USER --query 'ServiceSpecificCredentials[0].ServiceSpecificCredentialId' --output text)
-aws iam delete-service-specific-credential --user-name $GITOPS_USER --service-specific-credential-id $SSC_ID
-aws iam delete-user --user-name $GITOPS_USER
-aws codecommit delete-repository --repository-name $GITOPSC_REPO_NAME
 
 aws iam create-user --user-name $GITOPS_USER
 aws iam attach-user-policy --user-name $GITOPS_USER --policy-arn $CC_POLICY_ARN
@@ -43,11 +38,9 @@ flux bootstrap git \
   --username=$SSC_USER \
   --password=$SSC_PWD
 
-pushd ../../..
-
 echo "${GITOPS_REPO_URL}"
 git clone ${GITOPS_REPO_URL}
-rsync -av aws-lambda-java-workshop/labs/unicorn-store/software/unicorn-store-spring/gitops/ "${url##*/}"
+rsync -av ~/environment/aws-lambda-java-workshop/labs/unicorn-store/gitops/ "${GITOPS_REPO_URL##*/}"
 cd "${GITOPS_REPO_URL##*/}"
 
 export S3_REGION=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
@@ -56,6 +49,7 @@ export SPRING_DATASOURCE_URL=$(aws cloudformation describe-stacks --stack-name U
   --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksDatabaseJDBCConnectionString`].OutputValue' --output text)
 export ECR_URI=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
   --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksRepositoryUri`].OutputValue' --output text)
+export imagepolicy=$imagepolicy
 
 envsubst < ./apps/deployment.yaml > ./apps/deployment_new.yaml
 mv ./apps/deployment_new.yaml ./apps/deployment.yaml
