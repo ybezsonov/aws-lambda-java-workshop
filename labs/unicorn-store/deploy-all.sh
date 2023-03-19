@@ -3,3 +3,4 @@
 ./deploy-ci.sh
 ./deploy-ecs.sh
 ./deploy-eks.sh
+./deploy-gitops.sh
