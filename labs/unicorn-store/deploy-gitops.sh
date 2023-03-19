@@ -51,7 +51,7 @@ export SPRING_DATASOURCE_URL=$(aws cloudformation describe-stacks --stack-name U
   --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksDatabaseJDBCConnectionString`].OutputValue' --output text)
 export ECR_URI=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
   --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksRepositoryUri`].OutputValue' --output text)
-export imagepolicy=$imagepolicy
+export imagepolicy=\$imagepolicy
 
 envsubst < ./apps/deployment.yaml > ./apps/deployment_new.yaml
 mv ./apps/deployment_new.yaml ./apps/deployment.yaml
@@ -128,4 +128,5 @@ sleep 10
 flux reconcile kustomization apps -n flux-system
 sleep 10
 kubectl wait deployment -n unicorn-store-spring unicorn-store-spring --for condition=Available=True --timeout=120s
+kubectl -n unicorn-store-spring get all
 echo "App URL: http://$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')"
