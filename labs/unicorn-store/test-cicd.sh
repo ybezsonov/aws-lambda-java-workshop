@@ -11,7 +11,8 @@ fi
 
 if [ $app == "eks" ]
 then
-  location=$(cat infrastructure/cdk/target/output-eks.json | jq -r '.UnicornStoreSpringEKS.UnicornStoreServiceURL')
+  # location=$(cat infrastructure/cdk/target/output-eks.json | jq -r '.UnicornStoreSpringEKS.UnicornStoreServiceURL')
+  location=$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')
 fi
 
 id=$(curl --location --request POST $location'/unicorns' \
