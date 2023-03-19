@@ -2,7 +2,7 @@
 cd ~/environment
 
 ## Set JDK 17 as default
-sudo yum install java-17-amazon-corretto-devel
+sudo yum -y install java-17-amazon-corretto-devel
 sudo update-alternatives --set java /usr/lib/jvm/java-17-amazon-corretto.x86_64/bin/java
 sudo update-alternatives --set javac /usr/lib/jvm/java-17-amazon-corretto.x86_64/bin/javac
 export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto.x86_64
