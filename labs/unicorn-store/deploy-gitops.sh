@@ -30,6 +30,8 @@ export SSC_PWD=$(aws iam reset-service-specific-credential --user-name $GITOPS_U
 $(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
   --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksKubeconfig`].OutputValue' --output text)
 
+sleep 20
+
 flux bootstrap git \
   --components-extra=image-reflector-controller,image-automation-controller \
   --url=$GITOPS_REPO_URL \
@@ -121,4 +123,9 @@ popd
 # flux get kustomization --watch
 # kubectl -n unicorn-store-spring get all
 # kubectl get events -n unicorn-store-spring
+flux reconcile source git flux-system -n flux-system
+sleep 10
+flux reconcile kustomization apps -n flux-system
+sleep 10
+kubectl wait deployment -n unicorn-store-spring unicorn-store-spring --for condition=Available=True --timeout=120s
 echo "App URL: http://$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')"
