@@ -12,6 +12,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 
+import java.util.List;
+
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -33,6 +35,19 @@ public class UnicornController {
             return ResponseEntity.ok(savedUnicorn);
         } catch (Exception e) {
             String errorMsg = "Error creating unicorn";
+            logger.error(errorMsg, e);
+            throw new ResponseStatusException(INTERNAL_SERVER_ERROR, errorMsg, e);
+        }
+    }
+
+    @WithSpan("Get all Unicorns")
+    @GetMapping("/unicorns")
+    public ResponseEntity<List<Unicorn>> getAllUnicorns() {
+        try {
+            var savedUnicorns = unicornService.getAllUnicorns();
+            return ResponseEntity.ok(savedUnicorns);
+        } catch (Exception e) {
+            String errorMsg = "Error reading unicorns";
             logger.error(errorMsg, e);
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, errorMsg, e);
         }

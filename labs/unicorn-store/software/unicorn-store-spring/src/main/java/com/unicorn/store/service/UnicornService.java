@@ -7,6 +7,10 @@ import com.unicorn.store.model.Unicorn;
 import com.unicorn.store.model.UnicornEventType;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 @Service
 public class UnicornService {
     private final UnicornRepository unicornRepository;
@@ -21,6 +25,18 @@ public class UnicornService {
         var savedUnicorn = unicornRepository.save(unicorn);
         unicornPublisher.publish(savedUnicorn, UnicornEventType.UNICORN_CREATED);
         return savedUnicorn;
+    }
+
+    public List<Unicorn> getAllUnicorns() {
+
+        List<Unicorn> unicornList = new ArrayList<>();
+        Iterable<Unicorn> iterator = unicornRepository.findAll();
+
+        for (Unicorn unicorn : iterator){
+            unicornList.add(unicorn);
+        }
+
+        return unicornList;
     }
 
     public Unicorn updateUnicorn(Unicorn unicorn, String unicornId) {

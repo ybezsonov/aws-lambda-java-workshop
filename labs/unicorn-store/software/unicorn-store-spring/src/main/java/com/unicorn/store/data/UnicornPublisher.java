@@ -8,9 +8,6 @@ import com.unicorn.store.model.UnicornEventType;
 import org.springframework.stereotype.Service;
 
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.core.SdkSystemSetting;
-import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 import software.amazon.awssdk.services.eventbridge.model.EventBridgeException;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
@@ -26,8 +23,7 @@ public class UnicornPublisher {
             .builder()
             .credentialsProvider(DefaultCredentialsProvider.create())
             //.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-            .region(Region.of(System.getenv(SdkSystemSetting.AWS_REGION.environmentVariable())))
-            .httpClient(AwsCrtAsyncHttpClient.create())
+            //.region(Region.of(System.getenv(SdkSystemSetting.AWS_REGION.environmentVariable())))
             .build();
 
     public UnicornPublisher(ObjectMapper objectMapper) {
