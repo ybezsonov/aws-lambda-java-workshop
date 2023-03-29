@@ -37,14 +37,6 @@ spec:
               value: ${SPRING_DATASOURCE_URL}
             - name: S3_REGION
               value: ${S3_REGION}
-            - name: SPRING_DATASOURCE_HIKARI_maximumPoolSize
-              value: "1"
-            - name: OTEL_OTLP_ENDPOINT
-              value: "localhost:4317"
-            - name: OTEL_RESOURCE_ATTRIBUTES
-              value: "service.namespace=AWSObservability,service.name=unicorn-store-spring"
-            - name: OTEL_METRICS_EXPORTER
-              value: "otlp"
           ports:
             - containerPort: 80
         - name: otel
