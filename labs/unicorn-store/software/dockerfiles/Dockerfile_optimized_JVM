@@ -15,13 +15,11 @@ ENV MAVEN_OPTS='-Xmx6g'
 
 RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && mvn -Dmaven.test.skip=true clean package && cd target && unzip store-spring-1.0.0.jar"
 
-ADD https://github.com/aws-observability/aws-otel-java-instrumentation/releases/latest/download/aws-opentelemetry-agent.jar /tmp/aws-opentelemetry-agent.jar
-
 RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && jdeps --ignore-missing-deps \
     --multi-release 17 --print-module-deps \
     --class-path="target/BOOT-INF/lib/*" \
     --module-path="target/BOOT-INF/lib/*" \
-    target/store-spring-1.0.0.jar /tmp/aws-opentelemetry-agent.jar > jre-deps.info"
+    target/store-spring-1.0.0.jar > jre-deps.info"
 
 RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && export JAVA_TOOL_OPTIONS=\"-Djdk.lang.Process.launchMechanism=vfork\" && \
     jlink --verbose --compress 2 --strip-java-debug-attributes \
@@ -33,9 +31,6 @@ RUN addgroup --system spring && adduser --system spring --ingroup spring
 #USER spring:spring
 COPY --from=builder target/store-spring-1.0.0.jar store-spring.jar
 COPY --from=builder custom-jre custom-jre
-
-ADD https://github.com/aws-observability/aws-otel-java-instrumentation/releases/latest/download/aws-opentelemetry-agent.jar /opt/aws-opentelemetry-agent.jar
-ENV JAVA_TOOL_OPTIONS=-javaagent:/opt/aws-opentelemetry-agent.jar
 
 # OpenTelemetry agent configuration
 ENV OTEL_TRACES_SAMPLER "always_on"
