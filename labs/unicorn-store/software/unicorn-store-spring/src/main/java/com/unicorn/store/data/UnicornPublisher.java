@@ -5,6 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.unicorn.store.exceptions.PublisherException;
 import com.unicorn.store.model.Unicorn;
 import com.unicorn.store.model.UnicornEventType;
+import com.unicorn.store.otel.TracingRequestInterceptor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -19,12 +23,11 @@ import java.util.concurrent.ExecutionException;
 public class UnicornPublisher {
 
     private final ObjectMapper objectMapper;
-    private static final EventBridgeAsyncClient eventBridgeClient = EventBridgeAsyncClient
-            .builder()
-            .credentialsProvider(DefaultCredentialsProvider.create())
-            //.credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-            //.region(Region.of(System.getenv(SdkSystemSetting.AWS_REGION.environmentVariable())))
-            .build();
+
+    private Logger logger = LoggerFactory.getLogger(TracingRequestInterceptor.class);
+
+    @Autowired
+    private EventBridgeAsyncClient eventBridgeClient;
 
     public UnicornPublisher(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -36,17 +39,15 @@ public class UnicornPublisher {
             var eventsRequest = createEventRequestEntry(unicornEventType, unicornJson);
 
             eventBridgeClient.putEvents(eventsRequest).get();
-            System.out.println("Publishing ...");
-            System.out.println(unicornJson);
+            logger.info("Publishing ...");
+            logger.info(unicornJson);
         } catch (JsonProcessingException e) {
-            System.out.println("Error JsonProcessingException ...");
-            System.out.println(e.getMessage());
-            System.out.println(e.getStackTrace());
+            logger.error("Error JsonProcessingException ...");
+            logger.error(e.getMessage());
             // throw new PublisherException("Error while serializing the Unicorn", e);
         } catch (EventBridgeException | ExecutionException | InterruptedException e) {
-            System.out.println("Error EventBridgeException | ExecutionException ...");
-            System.out.println(e.getMessage());
-            System.out.println(e.getStackTrace());
+            logger.error("Error EventBridgeException | ExecutionException ...");
+            logger.error(e.getMessage());
             // throw new PublisherException("Error while publishing the event", e);
         }
     }

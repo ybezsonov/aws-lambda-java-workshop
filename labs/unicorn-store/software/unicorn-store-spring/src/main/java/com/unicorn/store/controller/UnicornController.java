@@ -3,14 +3,15 @@ package com.unicorn.store.controller;
 import com.unicorn.store.exceptions.ResourceNotFoundException;
 import com.unicorn.store.model.Unicorn;
 import com.unicorn.store.service.UnicornService;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
-import io.opentelemetry.instrumentation.annotations.WithSpan;
 
 import java.util.List;
 
@@ -20,6 +21,8 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RestController
 public class UnicornController {
 
+    @Autowired
+    private Tracer tracer;
     private final UnicornService unicornService;
     private static final Logger logger = LoggerFactory.getLogger(UnicornController.class);
 
@@ -27,78 +30,95 @@ public class UnicornController {
         this.unicornService = unicornService;
     }
 
-    @WithSpan("Create Unicorn")
     @PostMapping("/unicorns")
     public ResponseEntity<Unicorn> createUnicorn(@RequestBody Unicorn unicorn) {
+        Span span = tracer.spanBuilder("Create Unicorn").startSpan();
         try {
             var savedUnicorn = unicornService.createUnicorn(unicorn);
             return ResponseEntity.ok(savedUnicorn);
         } catch (Exception e) {
             String errorMsg = "Error creating unicorn";
+            span.recordException(e);
             logger.error(errorMsg, e);
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, errorMsg, e);
+        } finally {
+            span.end();
         }
     }
 
-    @WithSpan("Get all Unicorns")
     @GetMapping("/unicorns")
     public ResponseEntity<List<Unicorn>> getAllUnicorns() {
+        Span span = tracer.spanBuilder("Get all Unicorns").startSpan();
+
         try {
             var savedUnicorns = unicornService.getAllUnicorns();
             return ResponseEntity.ok(savedUnicorns);
         } catch (Exception e) {
             String errorMsg = "Error reading unicorns";
+            span.recordException(e);
             logger.error(errorMsg, e);
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, errorMsg, e);
+        } finally {
+            span.end();
         }
     }
 
-    @WithSpan("Update Unicorn")
     @PutMapping("/unicorns/{unicornId}")
     public ResponseEntity<Unicorn> updateUnicorn(@RequestBody Unicorn unicorn, @PathVariable String unicornId) {
+        Span span = tracer.spanBuilder("Update Unicorn").startSpan();
+
         try {
             var savedUnicorn = unicornService.updateUnicorn(unicorn, unicornId);
             return ResponseEntity.ok(savedUnicorn);
         } catch (Exception e) {
             String errorMsg = "Error updating unicorn";
+            span.recordException(e);
             logger.error(errorMsg, e);
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, errorMsg, e);
+        } finally {
+            span.end();
         }
     }
 
-    @WithSpan("Get Unicorn")
     @GetMapping("/unicorns/{unicornId}")
     public ResponseEntity<Unicorn> getUnicorn(@PathVariable String unicornId) {
+        Span span = tracer.spanBuilder("Get Unicorn").startSpan();
+
         try {
             var unicorn = unicornService.getUnicorn(unicornId);
             return ResponseEntity.ok(unicorn);
         } catch (ResourceNotFoundException e) {
             String errorMsg = "Unicorn not found";
+            span.recordException(e);
             logger.error(errorMsg, e);
             throw new ResponseStatusException(NOT_FOUND, errorMsg, e);
+        } finally {
+            span.end();
         }
     }
 
-    @WithSpan("Delete Unicorn")
     @DeleteMapping("/unicorns/{unicornId}")
     public ResponseEntity<String> deleteUnicorn(@PathVariable String unicornId) {
+        Span span = tracer.spanBuilder("Get Unicorn").startSpan();
+
         try {
             unicornService.deleteUnicorn(unicornId);
             return ResponseEntity.ok().build();
         } catch (ResourceNotFoundException e) {
             String errorMsg = "Unicorn not found";
             logger.error(errorMsg, e);
+            span.recordException(e);
             throw new ResponseStatusException(NOT_FOUND, errorMsg, e);
+        } finally {
+            span.end();
         }
     }
 
-    @WithSpan("Check Health")
     @GetMapping("/health")
     ResponseEntity<String> health() {
         return new ResponseEntity<>("Healthy!", HttpStatus.OK);
     }
 
-    @WithSpan("Get APP root")
     @GetMapping("/")
     ResponseEntity<String> root() {
         return new ResponseEntity<>("OK!", HttpStatus.OK);
