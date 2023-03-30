@@ -1,13 +1,6 @@
 ## go to tmp directory
 cd ~/environment
 
-## Set JDK 17 as default
-sudo yum -y install java-17-amazon-corretto-devel
-sudo update-alternatives --set java /usr/lib/jvm/java-17-amazon-corretto.x86_64/bin/java
-sudo update-alternatives --set javac /usr/lib/jvm/java-17-amazon-corretto.x86_64/bin/javac
-export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto.x86_64
-java -version
-
 aws cloud9 update-environment --environment-id $C9_PID --managed-credentials-action DISABLE
 rm -vf ${HOME}/.aws/credentials
 export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)

@@ -34,10 +34,16 @@ npm install -g artillery
 /home/ec2-user/environment/aws-lambda-java-workshop/resize-cloud9.sh 30
 
 ## Set JDK 11 as default
-sudo update-alternatives --set java /usr/lib/jvm/java-11-amazon-corretto.x86_64/bin/java
-sudo update-alternatives --set javac /usr/lib/jvm/java-11-amazon-corretto.x86_64/bin/javac
-export JAVA_HOME=/usr/lib/jvm/java-11-amazon-corretto.x86_64
+# sudo update-alternatives --set java /usr/lib/jvm/java-11-amazon-corretto.x86_64/bin/java
+# sudo update-alternatives --set javac /usr/lib/jvm/java-11-amazon-corretto.x86_64/bin/javac
+# export JAVA_HOME=/usr/lib/jvm/java-11-amazon-corretto.x86_64
 
+## Set JDK 17 as default
+sudo yum -y install java-17-amazon-corretto-devel
+sudo update-alternatives --set java /usr/lib/jvm/java-17-amazon-corretto.x86_64/bin/java
+sudo update-alternatives --set javac /usr/lib/jvm/java-17-amazon-corretto.x86_64/bin/javac
+export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto.x86_64
+java -version
 
 ## Pre-Download Maven dependencies for Unicorn Store
 cd ~/environment/aws-lambda-java-workshop/labs/unicorn-store
