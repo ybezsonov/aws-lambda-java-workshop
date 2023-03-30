@@ -26,9 +26,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
-import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
 
 import java.util.Arrays;
 
@@ -110,8 +108,19 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public EventBridgeClient eventBridge(OpenTelemetry otel) {
-        return EventBridgeClient.builder()
+    public EventBridgeAsyncClient eventBridge(OpenTelemetry otel) {
+        return EventBridgeAsyncClient.builder()
+                .overrideConfiguration(
+                        ClientOverrideConfiguration.builder()
+                                .addExecutionInterceptor(AwsSdkTelemetry.create(otel).newExecutionInterceptor())
+                                .build())
+                .build();
+    }
+
+    /*
+    @Bean
+    public S3AsyncClient amazonS3(OpenTelemetry otel) {
+        return S3AsyncClient.builder()
                 .overrideConfiguration(
                         ClientOverrideConfiguration.builder()
                                 .addExecutionInterceptor(AwsSdkTelemetry.create(otel).newExecutionInterceptor())
@@ -120,25 +129,16 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     @Bean
-    public S3Client amazonS3(OpenTelemetry otel) {
-        return S3Client.builder()
+    public DynamoDbAsyncClient amazonDynamoDB(OpenTelemetry otel) {
+
+        return DynamoDbAsyncClient.builder()
                 .overrideConfiguration(
                         ClientOverrideConfiguration.builder()
                                 .addExecutionInterceptor(AwsSdkTelemetry.create(otel).newExecutionInterceptor())
                                 .build())
                 .build();
     }
-
-    @Bean
-    public DynamoDbClient amazonDynamoDB(OpenTelemetry otel) {
-
-        return DynamoDbClient.builder()
-                .overrideConfiguration(
-                        ClientOverrideConfiguration.builder()
-                                .addExecutionInterceptor(AwsSdkTelemetry.create(otel).newExecutionInterceptor())
-                                .build())
-                .build();
-    }
+    */
 
     @Bean
     public MetricEmitter metricEmitter(OpenTelemetry otel) {
