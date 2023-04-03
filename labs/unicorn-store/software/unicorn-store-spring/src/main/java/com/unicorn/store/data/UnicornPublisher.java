@@ -8,7 +8,8 @@ import com.unicorn.store.model.UnicornEventType;
 import com.unicorn.store.otel.TracingRequestInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+// Dockerfile_03_optimized_JVM
+// import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
@@ -26,8 +27,14 @@ public class UnicornPublisher {
 
     private Logger logger = LoggerFactory.getLogger(TracingRequestInterceptor.class);
 
-    @Autowired
-    private EventBridgeAsyncClient eventBridgeClient;
+    // Dockerfile_00_ ... 02
+    private static final EventBridgeAsyncClient eventBridgeClient = EventBridgeAsyncClient
+            .builder()
+            .credentialsProvider(DefaultCredentialsProvider.create())
+            .build();
+    // Dockerfile_03_optimized_JVM
+    // @Autowired
+    // private EventBridgeAsyncClient eventBridgeClient;
 
     public UnicornPublisher(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -44,11 +51,9 @@ public class UnicornPublisher {
         } catch (JsonProcessingException e) {
             logger.error("Error JsonProcessingException ...");
             logger.error(e.getMessage());
-            // throw new PublisherException("Error while serializing the Unicorn", e);
         } catch (EventBridgeException | ExecutionException | InterruptedException e) {
             logger.error("Error EventBridgeException | ExecutionException ...");
             logger.error(e.getMessage());
-            // throw new PublisherException("Error while publishing the event", e);
         }
     }
 
