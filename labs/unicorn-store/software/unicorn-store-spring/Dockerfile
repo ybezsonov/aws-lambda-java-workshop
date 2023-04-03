@@ -1,26 +1,10 @@
 FROM maven:3-amazoncorretto-17 as builder
 
 COPY ./pom.xml ./pom.xml
-
-ADD https://github.com/aws-observability/aws-otel-java-instrumentation/releases/latest/download/aws-opentelemetry-agent.jar /opt/aws-opentelemetry-agent.jar
-ENV JAVA_TOOL_OPTIONS=-javaagent:/opt/aws-opentelemetry-agent.jar
+RUN mvn dependency:go-offline -f ./pom.xml
 
 COPY src ./src/
-RUN mvn clean package
-# && mv target/store-spring-1.0.0.jar store-spring.jar
-
-FROM amazoncorretto:17
-COPY --from=builder target/store-spring-1.0.0.jar store-spring.jar
-
-ADD https://github.com/aws-observability/aws-otel-java-instrumentation/releases/latest/download/aws-opentelemetry-agent.jar /opt/aws-opentelemetry-agent.jar
-ENV JAVA_TOOL_OPTIONS=-javaagent:/opt/aws-opentelemetry-agent.jar
-
-# OpenTelemetry agent configuration
-ENV OTEL_TRACES_SAMPLER "always_on"
-ENV OTEL_PROPAGATORS "tracecontext,baggage,xray"
-ENV OTEL_RESOURCE_ATTRIBUTES "service.name=unicorn-store-spring"
-ENV OTEL_IMR_EXPORT_INTERVAL "10000"
-ENV OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4317"
+RUN mvn clean package && mv target/store-spring-1.0.0.jar store-spring.jar
 
 EXPOSE 80
 ENTRYPOINT ["java","-jar","-Dserver.port=80","/store-spring.jar"]
