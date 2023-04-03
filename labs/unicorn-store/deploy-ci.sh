@@ -10,6 +10,7 @@ cd "${url##*/}"
 git checkout -b main
 cd ..
 rsync -av aws-lambda-java-workshop/labs/unicorn-store/software/unicorn-store-spring/ "${url##*/}" --exclude target
+cp -R aws-lambda-java-workshop/labs/unicorn-store/software/dockerfiles "${url##*/}"
 cd "${url##*/}"
 git add . && git commit -m "initial commit" && git push --set-upstream origin main
 popd
