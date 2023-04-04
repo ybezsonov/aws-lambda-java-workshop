@@ -3,7 +3,7 @@
 ![CI/CD ECS](resources/java-id-ci-cd-ecs.png)
 
 ## CI/CD EKS
-![CI/CD EKS](resources/java-id-ci-cd-eks.png)
+![CI/CD EKS](resources/java-id-ci-cd-eks-gitops.png)
 
 ## X-Ray Java integration
 ![X-Ray Java integration](resources/unicorn-store-spring-xray.png)
