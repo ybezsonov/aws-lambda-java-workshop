@@ -6,7 +6,7 @@ RUN mvn dependency:go-offline -f ./pom.xml
 COPY src ./src/
 RUN mvn clean package && mv target/store-spring-1.0.0.jar store-spring.jar
 
-FROM amazoncorretto:17
+FROM public.ecr.aws/amazoncorretto/amazoncorretto:17
 COPY --from=builder store-spring.jar store-spring.jar
 
 EXPOSE 80

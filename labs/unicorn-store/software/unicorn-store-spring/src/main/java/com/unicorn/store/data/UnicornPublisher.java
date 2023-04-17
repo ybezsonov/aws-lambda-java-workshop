@@ -8,7 +8,7 @@ import com.unicorn.store.model.UnicornEventType;
 import com.unicorn.store.otel.TracingRequestInterceptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-// Dockerfile_03_optimized_JVM
+// >= Dockerfile_03
 // import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +32,7 @@ public class UnicornPublisher {
             .builder()
             .credentialsProvider(DefaultCredentialsProvider.create())
             .build();
-    // Dockerfile_03_optimized_JVM
+    // >= Dockerfile_03
     // @Autowired
     // private EventBridgeAsyncClient eventBridgeClient;
 
