@@ -10,6 +10,7 @@ import software.amazon.awscdk.services.codebuild.PipelineProject;
 import software.amazon.awscdk.services.codebuild.BuildSpec;
 import software.amazon.awscdk.services.codebuild.ComputeType;
 import software.amazon.awscdk.services.codebuild.LinuxBuildImage;
+import software.amazon.awscdk.services.codebuild.LinuxArmBuildImage;
 import software.amazon.awscdk.services.codebuild.BuildEnvironment;
 import software.amazon.awscdk.services.codebuild.BuildEnvironmentVariable;
 import software.amazon.awscdk.services.codepipeline.Pipeline;
@@ -52,12 +53,11 @@ public class UnicornStoreCI extends Construct {
         final String ecrUri = ecr.getRepositoryUri().split("/")[0];
         final String imageName = ecr.getRepositoryUri().split("/")[1];
 
-        // Alternative approaches for multi-architecture Docker images
         // https://aws.amazon.com/blogs/devops/creating-multi-architecture-docker-images-to-support-graviton2-using-aws-codebuild-and-aws-codepipeline/
         // https://github.com/aws-samples/aws-multiarch-container-build-pipeline
-        PipelineProject codeBuild =
-                PipelineProject.Builder.create(scope, projectName + "-codebuild-build-ecr")
-                        .projectName(projectName + "-build-ecr")
+        PipelineProject codeBuildX86 =
+                PipelineProject.Builder.create(scope, projectName + "-codebuild-build-x86_64")
+                        .projectName(projectName + "-build-ecr-x86_64")
                         .buildSpec(BuildSpec.fromSourceFilename("buildspec.yml"))
                         .vpc(infrastructureStack.getVpc())
                         .environment(BuildEnvironment
@@ -67,12 +67,67 @@ public class UnicornStoreCI extends Construct {
                                 BuildEnvironmentVariable.builder().value(ecrUri).build(),
                                 "IMAGE_NAME",
                                 BuildEnvironmentVariable.builder().value(imageName).build(),
+                                "IMAGE_ARCH",
+                                BuildEnvironmentVariable.builder().value("amd64").build(),
                                 "AWS_DEFAULT_REGION",
                                 BuildEnvironmentVariable.builder()
                                         .value(infrastructureStack.getRegion()).build()))
                         .timeout(Duration.minutes(60)).build();
+        PipelineProject codeBuildArm64 =
+                PipelineProject.Builder.create(scope, projectName + "-codebuild-build-arm64")
+                        .projectName(projectName + "-build-ecr-arm64")
+                        .buildSpec(BuildSpec.fromSourceFilename("buildspec.yml"))
+                        .vpc(infrastructureStack.getVpc())
+                        .environment(BuildEnvironment
+                                .builder().privileged(true).computeType(ComputeType.LARGE)
+                                .buildImage(LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_2_0).build())
+                        .environmentVariables(Map.of("ECR_URI",
+                                BuildEnvironmentVariable.builder().value(ecrUri).build(),
+                                "IMAGE_NAME",
+                                BuildEnvironmentVariable.builder().value(imageName).build(),
+                                "IMAGE_ARCH",
+                                BuildEnvironmentVariable.builder().value("arm64").build(),
+                                "AWS_DEFAULT_REGION",
+                                BuildEnvironmentVariable.builder()
+                                        .value(infrastructureStack.getRegion()).build()))
+                        .timeout(Duration.minutes(60)).build();
+        PipelineProject codeBuildManifest =
+                PipelineProject.Builder.create(scope, projectName + "-codebuild-build-manifest")
+                        .projectName(projectName + "-build-ecr-manifest")
+                        .buildSpec(BuildSpec.fromSourceFilename("buildspec-manifest.yml"))
+                        .vpc(infrastructureStack.getVpc())
+                        .environment(BuildEnvironment
+                                .builder().privileged(true).computeType(ComputeType.SMALL)
+                                .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4).build())
+                        .environmentVariables(Map.of("ECR_URI",
+                                BuildEnvironmentVariable.builder().value(ecrUri).build(),
+                                "IMAGE_NAME",
+                                BuildEnvironmentVariable.builder().value(imageName).build(),
+                                "AWS_DEFAULT_REGION",
+                                BuildEnvironmentVariable.builder()
+                                        .value(infrastructureStack.getRegion()).build()))
+                        .timeout(Duration.minutes(60)).build();
+        // Alternative approaches for multi-architecture Docker images with buildx
+        // PipelineProject codeBuild =
+        //         PipelineProject.Builder.create(scope, projectName + "-codebuild-build-ecr")
+        //                 .projectName(projectName + "-build-ecr")
+        //                 .buildSpec(BuildSpec.fromSourceFilename("buildspec-buildx.yml"))
+        //                 .vpc(infrastructureStack.getVpc())
+        //                 .environment(BuildEnvironment
+        //                         .builder().privileged(true).computeType(ComputeType.LARGE)
+        //                         .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4).build())
+        //                 .environmentVariables(Map.of("ECR_URI",
+        //                         BuildEnvironmentVariable.builder().value(ecrUri).build(),
+        //                         "IMAGE_NAME",
+        //                         BuildEnvironmentVariable.builder().value(imageName).build(),
+        //                         "AWS_DEFAULT_REGION",
+        //                         BuildEnvironmentVariable.builder()
+        //                                 .value(infrastructureStack.getRegion()).build()))
+        //                 .timeout(Duration.minutes(60)).build();
 
-        ecr.grantPullPush(codeBuild);
+        ecr.grantPullPush(codeBuildX86);
+        ecr.grantPullPush(codeBuildArm64);
+        ecr.grantPullPush(codeBuildManifest);
 
         Artifact sourceOuput = Artifact.artifact(projectName + "-codecommit-artifact");
 
@@ -85,11 +140,26 @@ public class UnicornStoreCI extends Construct {
                                         .output(sourceOuput).branch("main")
                                         .trigger(CodeCommitTrigger.POLL).runOrder(1).build()))
                                 .build(),
-                        StageProps.builder().stageName("build")
+                        StageProps.builder().stageName("build-images")
                                 .actions(List.of(CodeBuildAction.Builder.create()
-                                        .actionName("build-docker-image").input(sourceOuput)
-                                        .project(codeBuild).runOrder(1).build()))
+                                                .actionName("build-image-x86_64").input(sourceOuput)
+                                                .project(codeBuildX86).runOrder(1).build(),
+                                        CodeBuildAction.Builder.create()
+                                                .actionName("build-image-arm64").input(sourceOuput)
+                                                .project(codeBuildArm64).runOrder(1).build()))
+                                .build(),
+                        StageProps.builder().stageName("build-manifest")
+                                .actions(List.of(CodeBuildAction.Builder.create()
+                                        .actionName("build-manifest").input(sourceOuput)
+                                        .project(codeBuildManifest).runOrder(1).build()))
                                 .build()))
+                        // Alternative approaches for multi-architecture Docker images with buildx
+                        // use buildspec-buildx.yml
+                        // StageProps.builder().stageName("build")
+                        //         .actions(List.of(CodeBuildAction.Builder.create()
+                        //                 .actionName("build-docker-image").input(sourceOuput)
+                        //                 .project(codeBuild).runOrder(1).build()))
+                        //         .build()))
                 .build();
     }
 }
