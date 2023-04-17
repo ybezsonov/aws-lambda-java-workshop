@@ -61,7 +61,7 @@ public class UnicornStoreCI extends Construct {
                         .buildSpec(BuildSpec.fromSourceFilename("buildspec.yml"))
                         .vpc(infrastructureStack.getVpc())
                         .environment(BuildEnvironment
-                                .builder().privileged(true).computeType(ComputeType.SMALL)
+                                .builder().privileged(true).computeType(ComputeType.LARGE)
                                 .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4).build())
                         .environmentVariables(Map.of("ECR_URI",
                                 BuildEnvironmentVariable.builder().value(ecrUri).build(),
