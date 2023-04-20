@@ -22,6 +22,9 @@ public class InfrastructureStack extends Stack {
         super(scope, id, props);
 
         vpc = createUnicornVpc();
+        new CfnOutput(this, "idUnicornStoreVPC", CfnOutputProps.builder()
+                .value(vpc.getVpcId())
+                .build());
         Tags.of(vpc).add("unicorn", "true");
         new CfnOutput(this, "arnUnicornStoreVPC", CfnOutputProps.builder()
                 .value(vpc.getVpcArn())
@@ -29,14 +32,20 @@ public class InfrastructureStack extends Stack {
         databaseSecret = createDatabaseSecret();
         new CfnOutput(this, "arnUnicornStoreDbSecret", CfnOutputProps.builder()
                 .value(databaseSecret.getSecretFullArn())
+                .exportName("arnUnicornStoreDbSecret")
                 .build());
         database = createRDSPostgresInstance(vpc, databaseSecret);
         new CfnOutput(this, "arnUnicornStoreDbInstance", CfnOutputProps.builder()
             .value(database.getInstanceArn())
             .build());
+        new CfnOutput(this, "databaseJDBCConnectionString", CfnOutputProps.builder()
+            .value(getDatabaseJDBCConnectionString())
+            .exportName("databaseJDBCConnectionString")
+            .build());
         eventBridge = createEventBus();
         new CfnOutput(this, "arnUnicornStoreEventBus", CfnOutputProps.builder()
             .value(eventBridge.getEventBusArn())
+            .exportName("arnUnicornStoreEventBus")
             .build());
         applicationSecurityGroup = new SecurityGroup(this, "ApplicationSecurityGroup",
                 SecurityGroupProps
@@ -67,6 +76,11 @@ public class InfrastructureStack extends Stack {
                 Peer.ipv4("10.0.0.0/16"),
                 Port.tcp(5432),
                 "Allow Database Traffic from local network");
+                
+        databaseSecurityGroup.addIngressRule(
+                Peer.ipv4("172.31.0.0/16"),
+                Port.tcp(5432),
+                "Allow Database Traffic from Default VPC local network - for Cloud9 access");                
 
         return databaseSecurityGroup;
     }

@@ -30,6 +30,15 @@ sudo yum install -y jq
 npm install -g aws-cdk --force
 npm install -g artillery
 
+curl -Lo copilot https://github.com/aws/copilot-cli/releases/latest/download/copilot-linux
+chmod +x copilot
+sudo mv copilot /usr/local/bin/copilot
+copilot --version
+
+wget https://github.com/mikefarah/yq/releases/download/v4.33.3/yq_linux_amd64.tar.gz -O - |\
+  tar xz && sudo mv yq_linux_amd64 /usr/bin/yq
+yq --version
+
 ## Resize disk
 /home/ec2-user/environment/aws-lambda-java-workshop/resize-cloud9.sh 30
 
