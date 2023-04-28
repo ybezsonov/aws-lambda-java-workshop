@@ -3,7 +3,7 @@ package com.unicorn.store.controller;
 import com.unicorn.store.exceptions.ResourceNotFoundException;
 import com.unicorn.store.model.Unicorn;
 import com.unicorn.store.service.UnicornService;
-// >= Dockerfile_03
+// >= Dockerfile_04
 // import io.opentelemetry.api.trace.Span;
 // import io.opentelemetry.api.trace.Tracer;
 import org.slf4j.Logger;
