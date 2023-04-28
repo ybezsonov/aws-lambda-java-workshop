@@ -15,8 +15,7 @@ ENV MAVEN_OPTS='-Xmx8g'
 RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && mvn -Dmaven.test.skip=true clean package -Pnative"
 
 FROM public.ecr.aws/lts/ubuntu:22.04
-#RUN addgroup --system spring && adduser --system spring --ingroup spring
-#USER spring:spring
+RUN addgroup --system spring && adduser --system spring --ingroup spring
 COPY --from=build-aot /app/target/store-spring /
 
 # OpenTelemetry agent configuration
@@ -25,6 +24,8 @@ ENV OTEL_PROPAGATORS "tracecontext,baggage,xray"
 ENV OTEL_RESOURCE_ATTRIBUTES "service.name=unicorn-store-spring"
 ENV OTEL_IMR_EXPORT_INTERVAL "10000"
 ENV OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4317"
+
+USER spring:spring
 
 EXPOSE 80
 

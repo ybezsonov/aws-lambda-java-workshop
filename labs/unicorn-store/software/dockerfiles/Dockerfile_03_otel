@@ -10,6 +10,8 @@ COPY src ./src/
 RUN mvn clean package && mv target/store-spring-1.0.0.jar store-spring.jar
 
 FROM public.ecr.aws/amazoncorretto/amazoncorretto:17
+RUN yum install -y shadow-utils
+
 COPY --from=builder store-spring.jar store-spring.jar
 
 ADD https://github.com/aws-observability/aws-otel-java-instrumentation/releases/latest/download/aws-opentelemetry-agent.jar /opt/aws-opentelemetry-agent.jar
@@ -21,6 +23,9 @@ ENV OTEL_PROPAGATORS "tracecontext,baggage,xray"
 ENV OTEL_RESOURCE_ATTRIBUTES "service.name=unicorn-store-spring"
 ENV OTEL_IMR_EXPORT_INTERVAL "10000"
 ENV OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4317"
+
+RUN groupadd --system spring 
+RUN adduser spring -g spring 
 
 EXPOSE 80
 ENTRYPOINT ["java","-jar","-Dserver.port=80","/store-spring.jar"]
