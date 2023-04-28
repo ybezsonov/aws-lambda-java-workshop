@@ -27,6 +27,6 @@ ENV OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4317"
 
 USER spring:spring
 
-EXPOSE 80
+EXPOSE 8080
 
-CMD ["./store-spring", "-Dserver.port=80"]
+CMD ["./store-spring", "-Dserver.port=8080"]

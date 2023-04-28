@@ -41,5 +41,5 @@ ENV OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4317"
 
 USER spring:spring
 
-EXPOSE 80
-CMD ["./custom-jre/bin/java","-jar","-Dserver.port=80","/store-spring.jar"]
+EXPOSE 8080
+CMD ["./custom-jre/bin/java","-jar","-Dserver.port=8080","/store-spring.jar"]
