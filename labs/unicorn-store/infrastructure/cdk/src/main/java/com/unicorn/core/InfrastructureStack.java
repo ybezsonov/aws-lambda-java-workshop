@@ -5,6 +5,7 @@ import software.amazon.awscdk.*;
 import software.amazon.awscdk.services.ec2.*;
 import software.amazon.awscdk.services.events.EventBus;
 import software.amazon.awscdk.services.rds.*;
+import software.amazon.awscdk.services.ssm.*;
 import software.constructs.Construct;
 
 import java.util.List;
@@ -18,10 +19,11 @@ public class InfrastructureStack extends Stack {
     private final ISecurityGroup applicationSecurityGroup;
 
 
-    public InfrastructureStack(final Construct scope, final String id, final StackProps props) {
+    public InfrastructureStack(final Construct scope, final String id, final StackProps props, 
+            final VpcStack vpcStack) {
         super(scope, id, props);
 
-        vpc = createUnicornVpc();
+        vpc = vpcStack.getVpc();
         new CfnOutput(this, "idUnicornStoreVPC", CfnOutputProps.builder()
                 .value(vpc.getVpcId())
                 .build());
@@ -42,6 +44,13 @@ public class InfrastructureStack extends Stack {
             .value(getDatabaseJDBCConnectionString())
             .exportName("databaseJDBCConnectionString")
             .build());
+        StringParameter.Builder.create(this, "SsmParameterDatabaseJDBCConnectionString")
+            .allowedPattern(".*")
+            .description("databaseJDBCConnectionString")
+            .parameterName("databaseJDBCConnectionString")
+            .stringValue(getDatabaseJDBCConnectionString())
+            .tier(ParameterTier.STANDARD)
+            .build();
         eventBridge = createEventBus();
         new CfnOutput(this, "arnUnicornStoreEventBus", CfnOutputProps.builder()
             .value(eventBridge.getEventBusArn())
@@ -76,11 +85,6 @@ public class InfrastructureStack extends Stack {
                 Peer.ipv4("10.0.0.0/16"),
                 Port.tcp(5432),
                 "Allow Database Traffic from local network");
-                
-        databaseSecurityGroup.addIngressRule(
-                Peer.ipv4("172.31.0.0/16"),
-                Port.tcp(5432),
-                "Allow Database Traffic from Default VPC local network - for Cloud9 access");                
 
         return databaseSecurityGroup;
     }
@@ -111,12 +115,6 @@ public class InfrastructureStack extends Stack {
                 .create(this, "postgres")
                 .secretName("unicornstore-db-secret")
                 .username("postgres").build();
-    }
-
-    private IVpc createUnicornVpc() {
-        return Vpc.Builder.create(this, "UnicornVpc")
-                .vpcName("UnicornVPC")
-                .build();
     }
 
     public EventBus getEventBridge() {

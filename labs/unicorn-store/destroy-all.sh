@@ -25,6 +25,7 @@ aws codecommit delete-repository --repository-name $GITOPSC_REPO_NAME
 cdk destroy UnicornStoreSpringECS --force
 cdk destroy UnicornStoreSpringCI --force
 cdk destroy UnicornStoreInfrastructure --force
+cdk destroy UnicornStoreVpc --force
 
 popd
 date
