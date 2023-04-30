@@ -7,7 +7,14 @@ COPY src ./src/
 RUN mvn clean package && mv target/store-spring-1.0.0.jar store-spring.jar
 
 FROM public.ecr.aws/amazoncorretto/amazoncorretto:17
+RUN yum install -y shadow-utils
+
 COPY --from=builder store-spring.jar store-spring.jar
+
+RUN groupadd --system spring 
+RUN adduser spring -g spring 
+
+USER spring:spring
 
 EXPOSE 80
 ENTRYPOINT ["java","-jar","-Dserver.port=80","/store-spring.jar"]

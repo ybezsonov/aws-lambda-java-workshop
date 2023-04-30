@@ -28,7 +28,7 @@ RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && export JAVA_TOOL_OPTIONS
 
 FROM public.ecr.aws/lts/ubuntu:22.04
 RUN addgroup --system spring && adduser --system spring --ingroup spring
-#USER spring:spring
+
 COPY --from=builder target/store-spring-1.0.0.jar store-spring.jar
 COPY --from=builder custom-jre custom-jre
 
@@ -39,5 +39,7 @@ ENV OTEL_RESOURCE_ATTRIBUTES "service.name=unicorn-store-spring"
 ENV OTEL_IMR_EXPORT_INTERVAL "10000"
 ENV OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4317"
 
-EXPOSE 80
-CMD ["./custom-jre/bin/java","-jar","-Dserver.port=80","/store-spring.jar"]
+USER spring:spring
+
+EXPOSE 8080
+CMD ["./custom-jre/bin/java","-jar","-Dserver.port=8080","/store-spring.jar"]

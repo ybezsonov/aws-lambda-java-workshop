@@ -3,7 +3,7 @@ package com.unicorn.store.controller;
 import com.unicorn.store.exceptions.ResourceNotFoundException;
 import com.unicorn.store.model.Unicorn;
 import com.unicorn.store.service.UnicornService;
-// >= Dockerfile_03
+// >= Dockerfile_04
 // import io.opentelemetry.api.trace.Span;
 // import io.opentelemetry.api.trace.Tracer;
 import org.slf4j.Logger;
@@ -22,7 +22,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RestController
 public class UnicornController {
 
-    // >= Dockerfile_03
+    // >= Dockerfile_04
     // @Autowired
     // private Tracer tracer;
     private final UnicornService unicornService;
@@ -34,19 +34,19 @@ public class UnicornController {
 
     @PostMapping("/unicorns")
     public ResponseEntity<Unicorn> createUnicorn(@RequestBody Unicorn unicorn) {
-        // >= Dockerfile_03
+        // >= Dockerfile_04
         // Span span = tracer.spanBuilder("Create Unicorn").startSpan();
         try {
             var savedUnicorn = unicornService.createUnicorn(unicorn);
             return ResponseEntity.ok(savedUnicorn);
         } catch (Exception e) {
             String errorMsg = "Error creating unicorn";
-            // >= Dockerfile_03
+            // >= Dockerfile_04
             // span.recordException(e);
             logger.error(errorMsg, e);
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, errorMsg, e);
         } finally {
-            // >= Dockerfile_03
+            // >= Dockerfile_04
             // span.end();
         }
     }
