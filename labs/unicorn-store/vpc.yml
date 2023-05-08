@@ -1,0 +1,329 @@
+Resources:
+  UnicornVpcF1177F04:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: UnicornVPC
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet1Subnet7A649375:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.0.0/18
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet1RouteTable96906A0C:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet1RouteTableAssociationF44235B5:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPublicSubnet1RouteTable96906A0C
+      SubnetId:
+        Ref: UnicornVpcPublicSubnet1Subnet7A649375
+  UnicornVpcPublicSubnet1DefaultRoute1878F765:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPublicSubnet1RouteTable96906A0C
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: UnicornVpcIGW14CF2173
+    DependsOn:
+      - UnicornVpcVPCGWFEB79A5C
+  UnicornVpcPublicSubnet1EIP13F12929:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet1NATGatewayA12F13D2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: UnicornVpcPublicSubnet1Subnet7A649375
+      AllocationId:
+        Fn::GetAtt:
+          - UnicornVpcPublicSubnet1EIP13F12929
+          - AllocationId
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet1
+        - Key: unicorn
+          Value: "true"
+    DependsOn:
+      - UnicornVpcPublicSubnet1DefaultRoute1878F765
+      - UnicornVpcPublicSubnet1RouteTableAssociationF44235B5
+  UnicornVpcPublicSubnet2SubnetE8F5102C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.64.0/18
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet2RouteTable35BDF454:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet2RouteTableAssociation95974C9A:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPublicSubnet2RouteTable35BDF454
+      SubnetId:
+        Ref: UnicornVpcPublicSubnet2SubnetE8F5102C
+  UnicornVpcPublicSubnet2DefaultRoute9320224E:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPublicSubnet2RouteTable35BDF454
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: UnicornVpcIGW14CF2173
+    DependsOn:
+      - UnicornVpcVPCGWFEB79A5C
+  UnicornVpcPublicSubnet2EIPF695015A:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet2NATGatewayD452815E:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: UnicornVpcPublicSubnet2SubnetE8F5102C
+      AllocationId:
+        Fn::GetAtt:
+          - UnicornVpcPublicSubnet2EIPF695015A
+          - AllocationId
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet2
+        - Key: unicorn
+          Value: "true"
+    DependsOn:
+      - UnicornVpcPublicSubnet2DefaultRoute9320224E
+      - UnicornVpcPublicSubnet2RouteTableAssociation95974C9A
+  UnicornVpcPrivateSubnet1SubnetDE2F31C6:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.128.0/18
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PrivateSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPrivateSubnet1RouteTable29148378:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      Tags:
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PrivateSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPrivateSubnet1RouteTableAssociationDAD226F0:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPrivateSubnet1RouteTable29148378
+      SubnetId:
+        Ref: UnicornVpcPrivateSubnet1SubnetDE2F31C6
+  UnicornVpcPrivateSubnet1DefaultRoute29E91FE1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPrivateSubnet1RouteTable29148378
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: UnicornVpcPublicSubnet1NATGatewayA12F13D2
+  UnicornVpcPrivateSubnet2SubnetCD967545:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.192.0/18
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PrivateSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPrivateSubnet2RouteTableA9744BE8:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      Tags:
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PrivateSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPrivateSubnet2RouteTableAssociation95CF71CE:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPrivateSubnet2RouteTableA9744BE8
+      SubnetId:
+        Ref: UnicornVpcPrivateSubnet2SubnetCD967545
+  UnicornVpcPrivateSubnet2DefaultRoute8561F5A3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPrivateSubnet2RouteTableA9744BE8
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: UnicornVpcPublicSubnet2NATGatewayD452815E
+  UnicornVpcIGW14CF2173:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: UnicornVPC
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcVPCGWFEB79A5C:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      InternetGatewayId:
+        Ref: UnicornVpcIGW14CF2173
+Outputs:
+  idUnicornStoreVPC:
+    Value:
+      Ref: UnicornVpcF1177F04
+  arnUnicornStoreVPC:
+    Value:
+      Fn::Join:
+        - ""
+        - - "arn:"
+          - Ref: AWS::Partition
+          - ":ec2:"
+          - Ref: AWS::Region
+          - ":"
+          - Ref: AWS::AccountId
+          - :vpc/
+          - Ref: UnicornVpcF1177F04
+  ExportsOutputRefUnicornVpcF1177F049EC4EBDC:
+    Value:
+      Ref: UnicornVpcF1177F04
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcF1177F049EC4EBDC
+  ExportsOutputRefUnicornVpcPrivateSubnet1SubnetDE2F31C654D2CE4E:
+    Value:
+      Ref: UnicornVpcPrivateSubnet1SubnetDE2F31C6
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcPrivateSubnet1SubnetDE2F31C654D2CE4E
+  ExportsOutputRefUnicornVpcPrivateSubnet2SubnetCD9675458475C365:
+    Value:
+      Ref: UnicornVpcPrivateSubnet2SubnetCD967545
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcPrivateSubnet2SubnetCD9675458475C365
+  ExportsOutputRefUnicornVpcPublicSubnet1Subnet7A649375489553F1:
+    Value:
+      Ref: UnicornVpcPublicSubnet1Subnet7A649375
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcPublicSubnet1Subnet7A649375489553F1
+  ExportsOutputRefUnicornVpcPublicSubnet2SubnetE8F5102C67C36638:
+    Value:
+      Ref: UnicornVpcPublicSubnet2SubnetE8F5102C
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcPublicSubnet2SubnetE8F5102C67C36638

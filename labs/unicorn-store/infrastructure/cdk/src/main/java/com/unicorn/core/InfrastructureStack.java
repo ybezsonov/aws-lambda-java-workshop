@@ -44,13 +44,17 @@ public class InfrastructureStack extends Stack {
             .value(getDatabaseJDBCConnectionString())
             .exportName("databaseJDBCConnectionString")
             .build());
-        StringParameter.Builder.create(this, "SsmParameterDatabaseJDBCConnectionString")
+        StringParameter param = StringParameter.Builder.create(this, "SsmParameterDatabaseJDBCConnectionString")
             .allowedPattern(".*")
             .description("databaseJDBCConnectionString")
             .parameterName("databaseJDBCConnectionString")
             .stringValue(getDatabaseJDBCConnectionString())
             .tier(ParameterTier.STANDARD)
             .build();
+        new CfnOutput(this, "ssmParameterDatabaseJDBCConnectionString", CfnOutputProps.builder()
+            .value(param.getParameterName())
+            .exportName("ssmParameterDatabaseJDBCConnectionString")
+            .build());
         eventBridge = createEventBus();
         new CfnOutput(this, "arnUnicornStoreEventBus", CfnOutputProps.builder()
             .value(eventBridge.getEventBusArn())
