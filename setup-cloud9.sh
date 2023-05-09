@@ -40,7 +40,7 @@ wget https://github.com/mikefarah/yq/releases/download/v4.33.3/yq_linux_amd64.ta
 yq --version
 
 ## Resize disk
-/home/ec2-user/environment/aws-lambda-java-workshop/resize-cloud9.sh 30
+/home/ec2-user/environment/aws-java-workshop/resize-cloud9.sh 30
 
 ## Set JDK 11 as default
 # sudo update-alternatives --set java /usr/lib/jvm/java-11-amazon-corretto.x86_64/bin/java
@@ -55,7 +55,7 @@ export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto.x86_64
 java -version
 
 ## Pre-Download Maven dependencies for Unicorn Store
-cd ~/environment/aws-lambda-java-workshop/labs/unicorn-store
+cd ~/environment/aws-java-workshop/labs/unicorn-store
 ./mvnw dependency:go-offline -f infrastructure/db-setup/pom.xml
 ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-basic/pom.xml
 ./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml

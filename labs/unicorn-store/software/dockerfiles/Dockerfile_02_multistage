@@ -11,10 +11,10 @@ RUN yum install -y shadow-utils
 
 COPY --from=builder store-spring.jar store-spring.jar
 
-RUN groupadd --system spring 
-RUN adduser spring -g spring 
+RUN groupadd --system spring
+RUN adduser spring -g spring
 
 USER spring:spring
 
-EXPOSE 80
-ENTRYPOINT ["java","-jar","-Dserver.port=80","/store-spring.jar"]
+EXPOSE 8080
+ENTRYPOINT ["java","-jar","-Dserver.port=8080","/store-spring.jar"]

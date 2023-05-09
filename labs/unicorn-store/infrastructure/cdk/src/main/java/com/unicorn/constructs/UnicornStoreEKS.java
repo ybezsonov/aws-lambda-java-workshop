@@ -2,9 +2,9 @@ package com.unicorn.constructs;
 
 import com.unicorn.core.InfrastructureStack;
 import com.unicorn.constructs.eks.UnicornStoreEKSaddExternalSecrets;
-import com.unicorn.constructs.eks.UnicornStoreEKSaddFargate;
-import com.unicorn.constructs.eks.UnicornStoreEKSaddPipeline;
-import com.unicorn.constructs.eks.UnicornStoreEKSaddApp;
+// import com.unicorn.constructs.eks.UnicornStoreEKSaddFargate;
+// import com.unicorn.constructs.eks.UnicornStoreEKSaddPipeline;
+// import com.unicorn.constructs.eks.UnicornStoreEKSaddApp;
 
 import software.amazon.awscdk.services.eks.Cluster;
 import software.amazon.awscdk.services.eks.KubernetesVersion;
@@ -17,6 +17,7 @@ import software.amazon.awscdk.services.eks.AlbControllerVersion;
 import software.amazon.awscdk.services.eks.AwsAuthMapping;
 import software.amazon.awscdk.services.eks.CapacityType;
 import software.amazon.awscdk.services.eks.KubernetesManifest;
+import software.amazon.awscdk.services.eks.EndpointAccess;
 import software.amazon.awscdk.services.ec2.InstanceClass;
 import software.amazon.awscdk.services.ec2.InstanceSize;
 import software.amazon.awscdk.services.ec2.SubnetType;
@@ -49,6 +50,7 @@ public class UnicornStoreEKS extends Construct {
         // Create the EKS cluster
         var cluster = Cluster.Builder.create(scope, projectName + "-cluster")
                 .clusterName(projectName).clusterName(projectName).vpc(infrastructureStack.getVpc())
+                .endpointAccess(EndpointAccess.PUBLIC)
                 .vpcSubnets(List.of(SubnetSelection.builder()
                         .subnetType(SubnetType.PRIVATE_WITH_EGRESS).build()))
                 .clusterLogging(Arrays.asList(ClusterLoggingTypes.API, ClusterLoggingTypes.AUDIT,

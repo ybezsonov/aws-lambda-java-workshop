@@ -81,6 +81,7 @@ public class UnicornStoreECS extends Construct {
                                 .image(ContainerImage.fromRegistry(infrastructureStack.getAccount()
                                         + ".dkr.ecr." + infrastructureStack.getRegion()
                                         + ".amazonaws.com/" + projectName + ":latest"))
+                                .containerPort(8080)
                                 .enableLogging(true)
                                 .environment(Map.of("SPRING_DATASOURCE_PASSWORD",
                                         infrastructureStack.getDatabaseSecretString(),

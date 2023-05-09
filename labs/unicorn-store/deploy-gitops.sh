@@ -42,7 +42,7 @@ flux bootstrap git \
 
 echo "${GITOPS_REPO_URL}"
 git clone ${GITOPS_REPO_URL}
-rsync -av ~/environment/aws-lambda-java-workshop/labs/unicorn-store/gitops/ "${GITOPS_REPO_URL##*/}"
+rsync -av ~/environment/aws-java-workshop/labs/unicorn-store/gitops/ "${GITOPS_REPO_URL##*/}"
 cd "${GITOPS_REPO_URL##*/}"
 
 export S3_REGION=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
