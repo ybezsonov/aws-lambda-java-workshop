@@ -60,3 +60,17 @@ cd ~/environment/aws-java-workshop/labs/unicorn-store
 ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-basic/pom.xml
 ./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml
 ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-micronaut/pom.xml
+
+## go to home directory
+cd ~/environment
+
+aws cloud9 update-environment --environment-id $C9_PID --managed-credentials-action DISABLE
+rm -vf ${HOME}/.aws/credentials
+export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
+export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
+echo "export ACCOUNT_ID=${ACCOUNT_ID}" | tee -a ~/.bash_profile
+echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
+aws configure set default.region ${AWS_REGION}
+aws configure get default.region
+test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
+aws sts get-caller-identity --query Arn | grep JavaWorkshop-admin -q && echo "IAM role is valid" || echo "IAM role is NOT valid"
