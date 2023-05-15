@@ -50,8 +50,9 @@ public class UnicornStoreCI extends Construct {
                 CfnOutputProps.builder().value(ecr.getRepositoryName()).build());
         new CfnOutput(scope, "arnUnicornStoreEcr",
                 CfnOutputProps.builder().value(ecr.getRepositoryArn()).build());
-        final String ecrUri = ecr.getRepositoryUri().split("/")[0];
-        final String imageName = ecr.getRepositoryUri().split("/")[1];
+        final String ecrUri = ecr.getRepositoryUri();
+        // final String ecrUri = ecr.getRepositoryUri().split("/")[0];
+        // final String imageName = ecr.getRepositoryUri().split("/")[1];
 
         // https://aws.amazon.com/blogs/devops/creating-multi-architecture-docker-images-to-support-graviton2-using-aws-codebuild-and-aws-codepipeline/
         // https://github.com/aws-samples/aws-multiarch-container-build-pipeline
@@ -65,8 +66,8 @@ public class UnicornStoreCI extends Construct {
                                 .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4).build())
                         .environmentVariables(Map.of("ECR_URI",
                                 BuildEnvironmentVariable.builder().value(ecrUri).build(),
-                                "IMAGE_NAME",
-                                BuildEnvironmentVariable.builder().value(imageName).build(),
+                                // "IMAGE_NAME",
+                                // BuildEnvironmentVariable.builder().value(imageName).build(),
                                 "IMAGE_ARCH",
                                 BuildEnvironmentVariable.builder().value("amd64").build(),
                                 "AWS_DEFAULT_REGION",
@@ -83,8 +84,8 @@ public class UnicornStoreCI extends Construct {
                                 .buildImage(LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_2_0).build())
                         .environmentVariables(Map.of("ECR_URI",
                                 BuildEnvironmentVariable.builder().value(ecrUri).build(),
-                                "IMAGE_NAME",
-                                BuildEnvironmentVariable.builder().value(imageName).build(),
+                                // "IMAGE_NAME",
+                                // BuildEnvironmentVariable.builder().value(imageName).build(),
                                 "IMAGE_ARCH",
                                 BuildEnvironmentVariable.builder().value("arm64").build(),
                                 "AWS_DEFAULT_REGION",
@@ -101,8 +102,8 @@ public class UnicornStoreCI extends Construct {
                                 .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4).build())
                         .environmentVariables(Map.of("ECR_URI",
                                 BuildEnvironmentVariable.builder().value(ecrUri).build(),
-                                "IMAGE_NAME",
-                                BuildEnvironmentVariable.builder().value(imageName).build(),
+                                // "IMAGE_NAME",
+                                // BuildEnvironmentVariable.builder().value(imageName).build(),
                                 "AWS_DEFAULT_REGION",
                                 BuildEnvironmentVariable.builder()
                                         .value(infrastructureStack.getRegion()).build()))
