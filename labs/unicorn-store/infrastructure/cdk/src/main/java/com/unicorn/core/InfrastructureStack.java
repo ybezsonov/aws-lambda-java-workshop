@@ -6,6 +6,7 @@ import software.amazon.awscdk.services.ec2.*;
 import software.amazon.awscdk.services.events.EventBus;
 import software.amazon.awscdk.services.rds.*;
 import software.amazon.awscdk.services.ssm.*;
+import software.amazon.awscdk.services.secretsmanager.*;
 import software.constructs.Construct;
 
 import java.util.List;
@@ -36,6 +37,14 @@ public class InfrastructureStack extends Stack {
                 .value(databaseSecret.getSecretFullArn())
                 .exportName("arnUnicornStoreDbSecret")
                 .build());
+        Secret secret = Secret.Builder.create(this, "dbSecretPassword")
+            .secretName("unicornstore-db-secret-password")
+            .secretStringValue(SecretValue.secretsManager(databaseSecret.getSecretName(), SecretsManagerSecretOptions.builder().jsonField("password").build()))
+            .build();
+        new CfnOutput(this, "arnUnicornStoreDbSecretPassword", CfnOutputProps.builder()
+                .value(secret.getSecretFullArn())
+                .exportName("arnUnicornStoreDbSecretPassword")
+                .build());
         database = createRDSPostgresInstance(vpc, databaseSecret);
         new CfnOutput(this, "arnUnicornStoreDbInstance", CfnOutputProps.builder()
             .value(database.getInstanceArn())
@@ -51,6 +60,10 @@ public class InfrastructureStack extends Stack {
             .stringValue(getDatabaseJDBCConnectionString())
             .tier(ParameterTier.STANDARD)
             .build();
+        new CfnOutput(this, "arnSsmParameterDatabaseJDBCConnectionString", CfnOutputProps.builder()
+            .value(param.getParameterArn())
+            .exportName("arnSsmParameterDatabaseJDBCConnectionString")
+            .build());
         new CfnOutput(this, "ssmParameterDatabaseJDBCConnectionString", CfnOutputProps.builder()
             .value(param.getParameterName())
             .exportName("ssmParameterDatabaseJDBCConnectionString")
