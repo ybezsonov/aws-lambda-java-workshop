@@ -302,6 +302,26 @@ Outputs:
           - Ref: AWS::AccountId
           - :vpc/
           - Ref: UnicornVpcF1177F04
+  idUnicornStoreVPCPublicSubnet1:
+    Value:
+      Ref: UnicornVpcPublicSubnet1Subnet7A649375
+    Export:
+      Name: idUnicornStoreVPCPublicSubnet1
+  idUnicornStoreVPCPublicSubnet2:
+    Value:
+      Ref: UnicornVpcPublicSubnet2SubnetE8F5102C
+    Export:
+      Name: idUnicornStoreVPCPublicSubnet2
+  idUnicornStoreVPCPrivateSubnet1:
+    Value:
+      Ref: UnicornVpcPrivateSubnet1SubnetDE2F31C6
+    Export:
+      Name: idUnicornStoreVPCPrivateSubnet1
+  idUnicornStoreVPCPrivateSubnet2:
+    Value:
+      Ref: UnicornVpcPrivateSubnet2SubnetCD967545
+    Export:
+      Name: idUnicornStoreVPCPrivateSubnet2
   ExportsOutputRefUnicornVpcF1177F049EC4EBDC:
     Value:
       Ref: UnicornVpcF1177F04

@@ -19,6 +19,22 @@ public class VpcStack extends Stack {
         new CfnOutput(this, "arnUnicornStoreVPC", CfnOutputProps.builder()
                 .value(vpc.getVpcArn())
                 .build());
+        new CfnOutput(this, "idUnicornStoreVPCPublicSubnet1", CfnOutputProps.builder()
+                .value(vpc.getPublicSubnets().get(0).getSubnetId())
+                .exportName("idUnicornStoreVPCPublicSubnet1")
+                .build());
+        new CfnOutput(this, "idUnicornStoreVPCPublicSubnet2", CfnOutputProps.builder()
+                .value(vpc.getPublicSubnets().get(1).getSubnetId())
+                .exportName("idUnicornStoreVPCPublicSubnet2")
+                .build());
+        new CfnOutput(this, "idUnicornStoreVPCPrivateSubnet1", CfnOutputProps.builder()
+                .value(vpc.getPrivateSubnets().get(0).getSubnetId())
+                .exportName("idUnicornStoreVPCPrivateSubnet1")
+                .build());
+        new CfnOutput(this, "idUnicornStoreVPCPrivateSubnet2", CfnOutputProps.builder()
+                .value(vpc.getPrivateSubnets().get(1).getSubnetId())
+                .exportName("idUnicornStoreVPCPrivateSubnet2")
+                .build());
     }
 
     private IVpc createUnicornVpc() {

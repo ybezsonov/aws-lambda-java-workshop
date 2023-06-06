@@ -9,14 +9,14 @@ sudo ./aws/install
 rm awscliv2.zip
 
 ## Install Maven
-export MVN_VERSION=3.8.7
+export MVN_VERSION=3.9.2
 export MVN_FOLDERNAME=apache-maven-${MVN_VERSION}
 export MVN_FILENAME=apache-maven-${MVN_VERSION}-bin.tar.gz
 curl -4 -L https://dlcdn.apache.org/maven/maven-3/${MVN_VERSION}/binaries/${MVN_FILENAME} | tar -xvz
 sudo mv $MVN_FOLDERNAME /usr/lib/maven
 export M2_HOME=/usr/lib/maven
 export PATH=${PATH}:${M2_HOME}/bin
-sudo ln -s /usr/lib/maven/bin/mvn /usr/local/bin 
+sudo ln -s /usr/lib/maven/bin/mvn /usr/local/bin
 
 # Install newer version of AWS SAM CLI
 wget -q https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip
@@ -73,4 +73,4 @@ echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
 aws configure set default.region ${AWS_REGION}
 aws configure get default.region
 test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
-aws sts get-caller-identity --query Arn | grep JavaWorkshop-admin -q && echo "IAM role is valid" || echo "IAM role is NOT valid"
+aws sts get-caller-identity --query Arn | grep java-on-aws-workshop-admin -q && echo "IAM role is valid" || echo "IAM role is NOT valid"

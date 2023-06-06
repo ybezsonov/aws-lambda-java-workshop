@@ -7,6 +7,8 @@ import software.amazon.awscdk.services.events.EventBus;
 import software.amazon.awscdk.services.rds.*;
 import software.amazon.awscdk.services.ssm.*;
 import software.amazon.awscdk.services.secretsmanager.*;
+import software.amazon.awscdk.services.iam.Role;
+import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.constructs.Construct;
 
 import java.util.List;
@@ -14,13 +16,15 @@ import java.util.List;
 public class InfrastructureStack extends Stack {
 
     private final DatabaseSecret databaseSecret;
+    private final Secret secretPassword;
+    private final StringParameter paramJdbc;
     private final DatabaseInstance database;
     private final EventBus eventBridge;
     private final IVpc vpc;
     private final ISecurityGroup applicationSecurityGroup;
 
 
-    public InfrastructureStack(final Construct scope, final String id, final StackProps props, 
+    public InfrastructureStack(final Construct scope, final String id, final StackProps props,
             final VpcStack vpcStack) {
         super(scope, id, props);
 
@@ -31,29 +35,31 @@ public class InfrastructureStack extends Stack {
         Tags.of(vpc).add("unicorn", "true");
         new CfnOutput(this, "arnUnicornStoreVPC", CfnOutputProps.builder()
                 .value(vpc.getVpcArn())
+                .exportName("arnUnicornStoreVPC")
                 .build());
         databaseSecret = createDatabaseSecret();
         new CfnOutput(this, "arnUnicornStoreDbSecret", CfnOutputProps.builder()
                 .value(databaseSecret.getSecretFullArn())
                 .exportName("arnUnicornStoreDbSecret")
                 .build());
-        Secret secret = Secret.Builder.create(this, "dbSecretPassword")
+        secretPassword = Secret.Builder.create(this, "dbSecretPassword")
             .secretName("unicornstore-db-secret-password")
             .secretStringValue(SecretValue.secretsManager(databaseSecret.getSecretName(), SecretsManagerSecretOptions.builder().jsonField("password").build()))
             .build();
         new CfnOutput(this, "arnUnicornStoreDbSecretPassword", CfnOutputProps.builder()
-                .value(secret.getSecretFullArn())
+                .value(secretPassword.getSecretFullArn())
                 .exportName("arnUnicornStoreDbSecretPassword")
                 .build());
         database = createRDSPostgresInstance(vpc, databaseSecret);
         new CfnOutput(this, "arnUnicornStoreDbInstance", CfnOutputProps.builder()
             .value(database.getInstanceArn())
+            .exportName("arnUnicornStoreDbInstance")
             .build());
         new CfnOutput(this, "databaseJDBCConnectionString", CfnOutputProps.builder()
             .value(getDatabaseJDBCConnectionString())
             .exportName("databaseJDBCConnectionString")
             .build());
-        StringParameter param = StringParameter.Builder.create(this, "SsmParameterDatabaseJDBCConnectionString")
+        paramJdbc = StringParameter.Builder.create(this, "SsmParameterDatabaseJDBCConnectionString")
             .allowedPattern(".*")
             .description("databaseJDBCConnectionString")
             .parameterName("databaseJDBCConnectionString")
@@ -61,11 +67,11 @@ public class InfrastructureStack extends Stack {
             .tier(ParameterTier.STANDARD)
             .build();
         new CfnOutput(this, "arnSsmParameterDatabaseJDBCConnectionString", CfnOutputProps.builder()
-            .value(param.getParameterArn())
+            .value(paramJdbc.getParameterArn())
             .exportName("arnSsmParameterDatabaseJDBCConnectionString")
             .build());
         new CfnOutput(this, "ssmParameterDatabaseJDBCConnectionString", CfnOutputProps.builder()
-            .value(param.getParameterName())
+            .value(paramJdbc.getParameterName())
             .exportName("ssmParameterDatabaseJDBCConnectionString")
             .build());
         eventBridge = createEventBus();
@@ -82,6 +88,14 @@ public class InfrastructureStack extends Stack {
                         .build());
 
         new DatabaseSetupConstruct(this, "UnicornDatabaseConstruct");
+
+        Role unicornInfrastructureRole = Role.Builder.create(this, "unicornstore-infrastructure-role")
+            .assumedBy(new ServicePrincipal("tasks.apprunner.amazonaws.com")).build();
+        unicornInfrastructureRole.grantAssumeRole(new ServicePrincipal("ecs-tasks.amazonaws.com"));
+
+        getEventBridge().grantPutEventsTo(unicornInfrastructureRole);
+        getSecretPassword().grantRead(unicornInfrastructureRole);
+        getParamJdbsc().grantRead(unicornInfrastructureRole);
     }
 
 
@@ -166,5 +180,11 @@ public class InfrastructureStack extends Stack {
         return "jdbc:postgresql://" + database.getDbInstanceEndpointAddress() + ":5432/unicorns";
     }
 
+    public Secret getSecretPassword(){
+        return secretPassword;
+    }
 
+    public StringParameter getParamJdbsc(){
+        return paramJdbc;
+    }
 }
