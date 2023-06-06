@@ -318,9 +318,9 @@ Resources:
   ################## INSTANCE #####################
   C9InstanceProfile:
     Type: AWS::IAM::InstanceProfile
-    InstanceProfileName: java-on-aws-workshop-admin
     Properties:
       Path: "/"
+      InstanceProfileName: java-on-aws-workshop-admin
       Roles:
         - Ref: C9Role
 
