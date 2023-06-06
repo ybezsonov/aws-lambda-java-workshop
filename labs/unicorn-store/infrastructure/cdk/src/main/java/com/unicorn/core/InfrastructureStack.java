@@ -89,15 +89,21 @@ public class InfrastructureStack extends Stack {
 
         new DatabaseSetupConstruct(this, "UnicornDatabaseConstruct");
 
-        Role unicornInfrastructureRole = Role.Builder.create(this, "unicornstore-infrastructure-role")
+        Role unicornStoreApprunnerRole = Role.Builder.create(this, "unicornstore-apprunner-role")
+            .roleName("unicornstore-apprunner-role")
             .assumedBy(new ServicePrincipal("tasks.apprunner.amazonaws.com")).build();
-        unicornInfrastructureRole.grantAssumeRole(new ServicePrincipal("ecs-tasks.amazonaws.com"));
 
-        getEventBridge().grantPutEventsTo(unicornInfrastructureRole);
-        getSecretPassword().grantRead(unicornInfrastructureRole);
-        getParamJdbsc().grantRead(unicornInfrastructureRole);
+        Role unicornStoreEscRole = Role.Builder.create(this, "unicornstore-ecs-role")
+            .roleName("unicornstore-ecs-role")
+            .assumedBy(new ServicePrincipal("ecs-tasks.amazonaws.com")).build();
+
+        getEventBridge().grantPutEventsTo(unicornStoreApprunnerRole);
+        getEventBridge().grantPutEventsTo(unicornStoreEscRole);
+        getSecretPassword().grantRead(unicornStoreApprunnerRole);
+        getSecretPassword().grantRead(unicornStoreEscRole);
+        getParamJdbsc().grantRead(unicornStoreApprunnerRole);
+        getParamJdbsc().grantRead(unicornStoreEscRole);
     }
-
 
     private EventBus createEventBus() {
         return EventBus.Builder.create(this, "UnicornEventBus")
