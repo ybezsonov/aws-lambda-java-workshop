@@ -337,11 +337,11 @@ Resources:
       InstanceType:
         Ref: C9InstanceType
       Name: java-on-aws-workshop
-      OwnerArn: !Join
-        - ''
-        - - 'arn:aws:iam::'
-          - !Ref "AWS::AccountId"
-          - ':role/java-on-aws-workshop'
+      # OwnerArn: !Join
+      #   - ''
+      #   - - 'arn:aws:iam::'
+      #     - !Ref "AWS::AccountId"
+      #     - ':role/java-on-aws-workshop'
       Tags:
         -
           Key: SSMBootstrap
