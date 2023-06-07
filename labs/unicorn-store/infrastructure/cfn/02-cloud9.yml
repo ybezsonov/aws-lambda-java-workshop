@@ -296,7 +296,7 @@ Resources:
                 - echo LC_ALL=en_US.UTF-8 >> /etc/environment
                 - . /home/ec2-user/.bashrc
                 - echo '=== Clone Git repository ==='
-                - sudo -H -u ec2-user bash -c "git clone https://github.com/ybezsonov/aws-lambda-java-workshop.git /home/ec2-user/aws-java-workshop/"
+                - sudo -H -u ec2-user bash -c "git clone https://github.com/ybezsonov/aws-lambda-java-workshop.git /home/ec2-user/environment/aws-java-workshop/"
                 - echo '=== Update and install default software components, resize disk ==='
                 - sudo -H -i -u ec2-user bash -c "/home/ec2-user/environment/aws-java-workshop/setup-cloud9.sh &>> /home/ec2-user/environment/java-ws-setup-cloud9.log"
                 - echo '=== Setup Infrastructure components ==='
