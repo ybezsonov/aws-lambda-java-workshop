@@ -63,7 +63,7 @@ cd ~/environment/aws-java-workshop/labs/unicorn-store
 
 ## go to home directory
 cd ~/environment
-
+rm -vf ${HOME}/.aws/credentials
 export C9_ENV_ID=$(aws cloud9 describe-environments --environment-ids $(aws cloud9 list-environments --output json | jq -r '[.environmentIds[]] | join(" ")') --query "environments[?name == 'java-on-aws-workshop'].id" --output text)
 echo "Cloud9 environment ID: $C9_ENV_ID"
 
