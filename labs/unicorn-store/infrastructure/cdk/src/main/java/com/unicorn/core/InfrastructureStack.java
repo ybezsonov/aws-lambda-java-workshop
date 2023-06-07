@@ -12,6 +12,7 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.constructs.Construct;
 
 import java.util.List;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 
 public class InfrastructureStack extends Stack {
 
@@ -93,9 +94,19 @@ public class InfrastructureStack extends Stack {
             .roleName("unicornstore-apprunner-role")
             .assumedBy(new ServicePrincipal("tasks.apprunner.amazonaws.com")).build();
 
+            unicornStoreApprunnerRole.addToPolicy(PolicyStatement.Builder.create()
+            .actions(List.of("xray:PutTraceSegments"))
+            .resources(List.of("*"))
+            .build());
+
         Role unicornStoreEscRole = Role.Builder.create(this, "unicornstore-ecs-role")
             .roleName("unicornstore-ecs-role")
             .assumedBy(new ServicePrincipal("ecs-tasks.amazonaws.com")).build();
+
+        unicornStoreEscRole.addToPolicy(PolicyStatement.Builder.create()
+            .actions(List.of("xray:PutTraceSegments"))
+            .resources(List.of("*"))
+            .build());
 
         getEventBridge().grantPutEventsTo(unicornStoreApprunnerRole);
         getEventBridge().grantPutEventsTo(unicornStoreEscRole);

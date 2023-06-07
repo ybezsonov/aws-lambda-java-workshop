@@ -30,6 +30,8 @@ cdk destroy UnicornStoreSpringECS --force
 cdk destroy UnicornStoreSpringCI --force
 cdk destroy UnicornStoreInfrastructure --force
 
+aws apprunner delete-vpc-connector --vpc-connector-arn $(aws apprunner list-vpc-connectors  --query "VpcConnectors[?VpcConnectorName == 'unicornstore-vpc-connector'].VpcConnectorArn" --output text)
+
 popd
 date
 end=`date +%s`
