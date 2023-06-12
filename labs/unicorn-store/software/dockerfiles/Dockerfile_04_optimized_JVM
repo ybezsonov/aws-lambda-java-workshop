@@ -1,6 +1,8 @@
 FROM maven:3-amazoncorretto-17 as builder
 RUN yum install -y unzip
 
+RUN ls -la /etc/alternatives/java
+
 COPY ./pom.xml ./pom.xml
 RUN mvn dependency:go-offline -f ./pom.xml
 
@@ -14,6 +16,8 @@ RUN jdeps --ignore-missing-deps \
     --class-path="target/BOOT-INF/lib/*" \
     --module-path="target/BOOT-INF/lib/*" \
     target/store-spring.jar > jre-deps.info
+    
+RUN cat jre-deps.info
 
 RUN export JAVA_TOOL_OPTIONS=\"-Djdk.lang.Process.launchMechanism=vfork\" && \
     jlink --verbose --compress 2 --strip-java-debug-attributes \
