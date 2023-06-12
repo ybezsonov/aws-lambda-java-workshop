@@ -38,10 +38,10 @@ spec:
             - name: S3_REGION
               value: ${S3_REGION}
           ports:
-            - containerPort: 80
-        - name: otel
-          image: "amazon/aws-otel-collector:latest"
-          resources:
-            limits:
-              cpu: "0.25"
-              memory: "0.5Gi"
+            - containerPort: 8080
+        # - name: otel
+        #   image: "amazon/aws-otel-collector:latest"
+        #   resources:
+        #     limits:
+        #       cpu: "0.25"
+        #       memory: "0.5Gi"

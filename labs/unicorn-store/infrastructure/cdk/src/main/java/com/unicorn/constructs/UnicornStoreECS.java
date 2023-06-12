@@ -81,12 +81,12 @@ public class UnicornStoreECS extends Construct {
                                 .image(ContainerImage.fromRegistry(infrastructureStack.getAccount()
                                         + ".dkr.ecr." + infrastructureStack.getRegion()
                                         + ".amazonaws.com/" + projectName + ":latest"))
+                                .containerPort(8080)
                                 .enableLogging(true)
                                 .environment(Map.of("SPRING_DATASOURCE_PASSWORD",
                                         infrastructureStack.getDatabaseSecretString(),
                                         "SPRING_DATASOURCE_URL",
-                                        infrastructureStack.getDatabaseJDBCConnectionString(),
-                                        "SPRING_DATASOURCE_HIKARI_maximumPoolSize", "1"))
+                                        infrastructureStack.getDatabaseJDBCConnectionString()))
                                 .build())
                         .circuitBreaker(DeploymentCircuitBreaker.builder().rollback(true).build())
                         .loadBalancerName(projectName).publicLoadBalancer(true).build();
@@ -98,6 +98,8 @@ public class UnicornStoreECS extends Construct {
 
         infrastructureStack.getEventBridge()
                 .grantPutEventsTo(loadBalancedFargateService.getTaskDefinition().getTaskRole());
+        infrastructureStack.getSecretPassword().grantRead(loadBalancedFargateService.getTaskDefinition().getTaskRole());
+        infrastructureStack.getParamJdbsc().grantRead(loadBalancedFargateService.getTaskDefinition().getTaskRole());
 
         // https://raw.githubusercontent.com/aws-observability/aws-otel-collector/main/deployment-template/ecs/aws-otel-fargate-sidecar-deployment-cfn.yaml
         PolicyStatement executionRolePolicy = PolicyStatement.Builder.create().effect(Effect.ALLOW)
@@ -137,22 +139,22 @@ public class UnicornStoreECS extends Construct {
                         projectName + "AmazonSSMReadOnlyAccess",
                         "arn:aws:iam::aws:policy/AmazonSSMReadOnlyAccess"));
 
-        // https://docs.aws.amazon.com/xray/latest/devguide/xray-java-opentel-sdk.html
-        loadBalancedFargateService.getTaskDefinition().addContainer("otel-collector",
-                ContainerDefinitionOptions.builder()
-                        .image(ContainerImage.fromRegistry("amazon/aws-otel-collector:latest"))
-                        // --config=/etc/ecs/ecs-amp-xray.yaml
-                        // --config=/etc/ecs/ecs-default-config.yaml
-                        .command(List.of("--config", "/etc/ecs/ecs-xray.yaml")).logging(logging)
-                        .build());
+        // // https://docs.aws.amazon.com/xray/latest/devguide/xray-java-opentel-sdk.html
+        // loadBalancedFargateService.getTaskDefinition().addContainer("otel-collector",
+        //         ContainerDefinitionOptions.builder()
+        //                 .image(ContainerImage.fromRegistry("amazon/aws-otel-collector:latest"))
+        //                 // --config=/etc/ecs/ecs-amp-xray.yaml
+        //                 // --config=/etc/ecs/ecs-default-config.yaml
+        //                 .command(List.of("--config", "/etc/ecs/ecs-xray.yaml")).logging(logging)
+        //                 .build());
 
-        ContainerDefinition otel =
-                loadBalancedFargateService.getTaskDefinition().findContainer("otel-collector");
+        // ContainerDefinition otel =
+        //         loadBalancedFargateService.getTaskDefinition().findContainer("otel-collector");
 
-        ContainerDependency dependsOnOtel = ContainerDependency.builder().container(otel)
-                .condition(ContainerDependencyCondition.START).build();
-        loadBalancedFargateService.getTaskDefinition().findContainer(projectName)
-                .addContainerDependencies(dependsOnOtel);
+        // ContainerDependency dependsOnOtel = ContainerDependency.builder().container(otel)
+        //         .condition(ContainerDependencyCondition.START).build();
+        // loadBalancedFargateService.getTaskDefinition().findContainer(projectName)
+        //         .addContainerDependencies(dependsOnOtel);
 
         // deployment construct which listens to ECR events, then deploys to the
         // existing service.
