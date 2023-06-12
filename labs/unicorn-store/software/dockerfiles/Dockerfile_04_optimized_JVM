@@ -14,10 +14,11 @@ RUN mv target/store-spring-1.0.0.jar target/store-spring.jar && cd target && unz
 RUN jdeps --ignore-missing-deps \
     --multi-release 17 --print-module-deps \
     --class-path="target/BOOT-INF/lib/*" \
-    --module-path="target/BOOT-INF/lib/*" \
     target/store-spring.jar > jre-deps.info
-    
-RUN cat jre-deps.info
+
+# Adding jdk.crypto.ec for TLS 1.3 support  
+RUN truncate --size -1 jre-deps.info
+RUN echo ",jdk.crypto.ec" >> jre-deps.info && cat jre-deps.info
 
 RUN export JAVA_TOOL_OPTIONS=\"-Djdk.lang.Process.launchMechanism=vfork\" && \
     jlink --verbose --compress 2 --strip-java-debug-attributes \
@@ -43,4 +44,4 @@ ENV OTEL_IMR_EXPORT_INTERVAL "10000"
 ENV OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4317"
 
 EXPOSE 8080
-CMD ["./custom-jre/bin/java","-jar","-Dserver.port=8080","/store-spring.jar"]
+ENTRYPOINT ["./custom-jre/bin/java","-jar","-Dserver.port=8080","/store-spring.jar"]
