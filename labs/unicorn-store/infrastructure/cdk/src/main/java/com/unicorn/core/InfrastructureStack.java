@@ -1,10 +1,22 @@
 package com.unicorn.core;
 
 import com.unicorn.constructs.DatabaseSetupConstruct;
-import software.amazon.awscdk.*;
+import software.amazon.awscdk.CfnOutput;
+import software.amazon.awscdk.CfnOutputProps;
+import software.amazon.awscdk.Duration;
+import software.amazon.awscdk.Stack;
+import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.SecretValue;
+import software.amazon.awscdk.SecretsManagerSecretOptions;
+import software.amazon.awscdk.Tags;
 import software.amazon.awscdk.services.ec2.*;
 import software.amazon.awscdk.services.events.EventBus;
-import software.amazon.awscdk.services.rds.*;
+import software.amazon.awscdk.services.rds.DatabaseSecret;
+import software.amazon.awscdk.services.rds.DatabaseInstance;
+import software.amazon.awscdk.services.rds.PostgresEngineVersion;
+import software.amazon.awscdk.services.rds.PostgresInstanceEngineProps;
+import software.amazon.awscdk.services.rds.DatabaseInstanceEngine;
+import software.amazon.awscdk.services.rds.Credentials;
 import software.amazon.awscdk.services.ssm.*;
 import software.amazon.awscdk.services.secretsmanager.*;
 import software.amazon.awscdk.services.iam.Role;
