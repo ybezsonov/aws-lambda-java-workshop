@@ -1,0 +1,698 @@
+Resources:
+  UnicornVpcF1177F04:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: UnicornVPC
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet1Subnet7A649375:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.0.0/18
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet1RouteTable96906A0C:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet1RouteTableAssociationF44235B5:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPublicSubnet1RouteTable96906A0C
+      SubnetId:
+        Ref: UnicornVpcPublicSubnet1Subnet7A649375
+  UnicornVpcPublicSubnet1DefaultRoute1878F765:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPublicSubnet1RouteTable96906A0C
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: UnicornVpcIGW14CF2173
+    DependsOn:
+      - UnicornVpcVPCGWFEB79A5C
+  UnicornVpcPublicSubnet1EIP13F12929:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet1NATGatewayA12F13D2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: UnicornVpcPublicSubnet1Subnet7A649375
+      AllocationId:
+        Fn::GetAtt:
+          - UnicornVpcPublicSubnet1EIP13F12929
+          - AllocationId
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet1
+        - Key: unicorn
+          Value: "true"
+    DependsOn:
+      - UnicornVpcPublicSubnet1DefaultRoute1878F765
+      - UnicornVpcPublicSubnet1RouteTableAssociationF44235B5
+  UnicornVpcPublicSubnet2SubnetE8F5102C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.64.0/18
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Public
+        - Key: aws-cdk:subnet-type
+          Value: Public
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet2RouteTable35BDF454:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet2RouteTableAssociation95974C9A:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPublicSubnet2RouteTable35BDF454
+      SubnetId:
+        Ref: UnicornVpcPublicSubnet2SubnetE8F5102C
+  UnicornVpcPublicSubnet2DefaultRoute9320224E:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPublicSubnet2RouteTable35BDF454
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: UnicornVpcIGW14CF2173
+    DependsOn:
+      - UnicornVpcVPCGWFEB79A5C
+  UnicornVpcPublicSubnet2EIPF695015A:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPublicSubnet2NATGatewayD452815E:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId:
+        Ref: UnicornVpcPublicSubnet2SubnetE8F5102C
+      AllocationId:
+        Fn::GetAtt:
+          - UnicornVpcPublicSubnet2EIPF695015A
+          - AllocationId
+      Tags:
+        - Key: kubernetes.io/role/elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PublicSubnet2
+        - Key: unicorn
+          Value: "true"
+    DependsOn:
+      - UnicornVpcPublicSubnet2DefaultRoute9320224E
+      - UnicornVpcPublicSubnet2RouteTableAssociation95974C9A
+  UnicornVpcPrivateSubnet1SubnetDE2F31C6:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      AvailabilityZone:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.128.0/18
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PrivateSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPrivateSubnet1RouteTable29148378:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      Tags:
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PrivateSubnet1
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPrivateSubnet1RouteTableAssociationDAD226F0:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPrivateSubnet1RouteTable29148378
+      SubnetId:
+        Ref: UnicornVpcPrivateSubnet1SubnetDE2F31C6
+  UnicornVpcPrivateSubnet1DefaultRoute29E91FE1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPrivateSubnet1RouteTable29148378
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: UnicornVpcPublicSubnet1NATGatewayA12F13D2
+  UnicornVpcPrivateSubnet2SubnetCD967545:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      AvailabilityZone:
+        Fn::Select:
+          - 1
+          - Fn::GetAZs: ""
+      CidrBlock: 10.0.192.0/18
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: aws-cdk:subnet-name
+          Value: Private
+        - Key: aws-cdk:subnet-type
+          Value: Private
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PrivateSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPrivateSubnet2RouteTableA9744BE8:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      Tags:
+        - Key: kubernetes.io/role/internal-elb
+          Value: "1"
+        - Key: Name
+          Value: UnicornStoreVpc/UnicornVpc/PrivateSubnet2
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcPrivateSubnet2RouteTableAssociation95CF71CE:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPrivateSubnet2RouteTableA9744BE8
+      SubnetId:
+        Ref: UnicornVpcPrivateSubnet2SubnetCD967545
+  UnicornVpcPrivateSubnet2DefaultRoute8561F5A3:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId:
+        Ref: UnicornVpcPrivateSubnet2RouteTableA9744BE8
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: UnicornVpcPublicSubnet2NATGatewayD452815E
+  UnicornVpcIGW14CF2173:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: UnicornVPC
+        - Key: unicorn
+          Value: "true"
+  UnicornVpcVPCGWFEB79A5C:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: UnicornVpcF1177F04
+      InternetGatewayId:
+        Ref: UnicornVpcIGW14CF2173
+  ################## PERMISSIONS AND ROLES #################
+  C9Role:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W43
+            reason: "C9 Instance will be used to deploy Infrastructure in the workshop"
+          - id: W28
+            reason: "Needed in order to check the proper role is attached to the instance before running CDK"
+    Properties:
+      RoleName: java-on-aws-workshop-admin
+      Tags:
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - ssm.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      Path: "/"
+      # Policies:
+      #   - PolicyName:
+      #       Fn::Join:
+      #         - ''
+      #         - - C9InstanceDenyPolicy-
+      #           - Ref: AWS::Region
+      #     PolicyDocument:
+      #       Version: '2012-10-17'
+      #       Statement:
+      #         - Effect: Deny
+      #           Action:
+      #             - cloud9:UpdateEnvironment
+      #           Resource: "*"
+  C9LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W11
+            reason: "Describe Action doesn't support any resource condition"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      Policies:
+        - PolicyName:
+            Fn::Join:
+              - ''
+              - - C9LambdaPolicy-
+                - Ref: AWS::Region
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeStackEvents
+                  - cloudformation:DescribeStackResource
+                  - cloudformation:DescribeStackResources
+                Resource: !Sub "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/*"
+              - Effect: Allow
+                Action:
+                  - ec2:AssociateIamInstanceProfile
+                  - ec2:ModifyInstanceAttribute
+                  - ec2:ReplaceIamInstanceProfileAssociation
+                Resource: !Sub "arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/*"
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                  - ec2:DescribeIamInstanceProfileAssociations
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - iam:ListInstanceProfiles
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:instance-profile/*
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  Fn::GetAtt:
+                    - C9Role
+                    - Arn
+  ################## LAMBDA BOOTSTRAP FUNCTION ################
+
+  C9BootstrapInstanceLambda:
+    Type: Custom::C9BootstrapInstanceLambda
+    DependsOn:
+      - C9LambdaExecutionRole
+    Properties:
+      Tags:
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+      ServiceToken:
+        Fn::GetAtt:
+          - C9BootstrapInstanceLambdaFunction
+          - Arn
+      REGION:
+        Ref: AWS::Region
+      StackName:
+        Ref: AWS::StackName
+      EnvironmentId:
+        Ref: C9Instance
+      LabIdeInstanceProfileName:
+        Ref: C9InstanceProfile
+      LabIdeInstanceProfileArn:
+        Fn::GetAtt:
+          - C9InstanceProfile
+          - Arn
+  C9BootstrapInstanceLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Tags:
+        - Key: Environment
+          Value: AWS Example
+      Handler: index.lambda_handler
+      Role:
+        Fn::GetAtt:
+          - C9LambdaExecutionRole
+          - Arn
+      Runtime: python3.9
+      MemorySize: 256
+      Timeout: 600
+      Code:
+        ZipFile: |
+          from __future__ import print_function
+          import boto3
+          import json
+          import os
+          import time
+          import traceback
+          import cfnresponse
+          import logging
+
+          logger = logging.getLogger(__name__)
+          logger.setLevel(logging.INFO)
+
+          def lambda_handler(event, context):
+              logger.info('event: {}'.format(event))
+              logger.info('context: {}'.format(context))
+              responseData = {}
+
+              if event['RequestType'] == 'Create':
+                  try:
+                      # Open AWS clients
+                      ec2 = boto3.client('ec2')
+
+                      # Get the InstanceId of the Cloud9 IDE
+                      instance = ec2.describe_instances(Filters=[{'Name': 'tag:Name','Values': ['aws-cloud9-java-on-aws-workshop'+'-'+event['ResourceProperties']['EnvironmentId']]}])['Reservations'][0]['Instances'][0]
+                      logger.info('instance: {}'.format(instance))
+
+                      # Create the IamInstanceProfile request object
+                      iam_instance_profile = {
+                          'Arn': event['ResourceProperties']['LabIdeInstanceProfileArn'],
+                          'Name': event['ResourceProperties']['LabIdeInstanceProfileName']
+                      }
+                      logger.info('iam_instance_profile: {}'.format(iam_instance_profile))
+
+                      # Wait for Instance to become ready before adding Role
+                      instance_state = instance['State']['Name']
+                      logger.info('instance_state: {}'.format(instance_state))
+                      while instance_state != 'running':
+                          time.sleep(5)
+                          instance_state = ec2.describe_instances(InstanceIds=[instance['InstanceId']])
+                          logger.info('instance_state: {}'.format(instance_state))
+
+                      # attach instance profile
+                      response = ec2.associate_iam_instance_profile(IamInstanceProfile=iam_instance_profile, InstanceId=instance['InstanceId'])
+                      logger.info('response - associate_iam_instance_profile: {}'.format(response))
+                      #r_ec2 = boto3.resource('ec2')
+
+                      responseData = {'Success': 'Started bootstrapping for instance: '+instance['InstanceId']}
+                      cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'CustomResourcePhysicalID')
+
+                  except Exception as e:
+                      logger.error(e, exc_info=True)
+                      # responseData = {'Error': traceback.format_exc(e)}
+                      responseData = {'Error':'There was a problem associating IAM profile to the Cloud9 Instance'}
+                      cfnresponse.send(event, context, cfnresponse.FAILED, responseData, 'CustomResourcePhysicalID')
+
+              else:
+                responseData = {'Success': 'Update or delete event'}
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'CustomResourcePhysicalID')
+  ################## SSM BOOTSRAP HANDLER ###############
+  C9OutputBucket:
+    Type: AWS::S3::Bucket
+    Metadata:
+      cfn_nag:
+        rules_to_suppress:
+          - id: W35
+            reason: "Access Logs aren't needed for this bucket"
+    DeletionPolicy: Retain
+    Properties:
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  C9OutputBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref C9OutputBucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - 's3:GetObject'
+              - 's3:PutObject'
+              - 's3:PutObjectAcl'
+            Effect: Allow
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref C9OutputBucket
+                - /*
+            Principal:
+              AWS:
+                Fn::GetAtt:
+                  - C9LambdaExecutionRole
+                  - Arn
+  C9SSMDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      Tags:
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+      DocumentType: Command
+      Content:
+        schemaVersion: '2.2'
+        description: Bootstrap Cloud9 Instance
+        mainSteps:
+          - action: aws:runShellScript
+            name: C9bootstrap
+            inputs:
+              runCommand:
+                - "#!/bin/bash"
+                - date
+                - echo LANG=en_US.utf-8 >> /etc/environment
+                - echo LC_ALL=en_US.UTF-8 >> /etc/environment
+                - . /home/ec2-user/.bashrc
+                - echo '=== Clone Git repository ==='
+                - sudo -H -u ec2-user bash -c "git clone https://github.com/ybezsonov/aws-lambda-java-workshop.git /home/ec2-user/environment/aws-java-workshop/"
+                - echo '=== Update and install default software components, resize disk ==='
+                - sudo -H -i -u ec2-user bash -c "/home/ec2-user/environment/aws-java-workshop/setup-cloud9.sh &>> /home/ec2-user/java-ws-setup-cloud9.log"
+                - echo '=== Setup Infrastructure components ==='
+                - sudo -H -i -u ec2-user bash -c "cd /home/ec2-user/environment/aws-java-workshop/labs/unicorn-store/ && ./setup-infrastructure.sh &>> /home/ec2-user/java-ws-setup-infra.log"
+                - sudo -H -i -u ec2-user bash -c "/home/ec2-user/environment/aws-java-workshop/completed.sh"
+                - echo "Bootstrap completed with return code $?"
+  C9BootstrapAssociation:
+    Type: AWS::SSM::Association
+    Properties:
+      Name: !Ref C9SSMDocument
+      OutputLocation:
+        S3Location:
+          OutputS3BucketName: !Ref C9OutputBucket
+          OutputS3KeyPrefix: bootstrapoutput
+      Targets:
+        - Key: tag:SSMBootstrap
+          Values:
+            - Active
+  ################## INSTANCE #####################
+  C9InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      InstanceProfileName: java-on-aws-workshop-admin
+      Roles:
+        - Ref: C9Role
+  C9Instance:
+    DependsOn: C9BootstrapAssociation
+    Type: AWS::Cloud9::EnvironmentEC2
+    Properties:
+      Description: !Sub AWS Cloud9 instance for ${EnvironmentName}
+      # SubnetId: !ImportValue idUnicornStoreVPCPublicSubnet1
+      SubnetId:
+        Ref: UnicornVpcPublicSubnet1Subnet7A649375
+      ImageId: amazonlinux-2-x86_64
+      #ConnectionType: CONNECT_SSM
+
+      AutomaticStopTimeMinutes: 3600
+      InstanceType:
+        Ref: C9InstanceType
+      Name: java-on-aws-workshop
+      # OwnerArn: !GetAtt C9Role.Arn
+      # OwnerArn: !Join
+      #   - ''
+      #   - - 'arn:aws:iam::'
+      #     - !Ref "AWS::AccountId"
+      #     - ':role/java-on-aws-workshop'
+      Tags:
+        - Key: SSMBootstrap
+          Value: Active
+        - Key: Environment
+          Value: !Sub ${EnvironmentName}
+Outputs:
+  idUnicornStoreVPC:
+    Value:
+      Ref: UnicornVpcF1177F04
+  arnUnicornStoreVPC:
+    Value:
+      Fn::Join:
+        - ""
+        - - "arn:"
+          - Ref: AWS::Partition
+          - ":ec2:"
+          - Ref: AWS::Region
+          - ":"
+          - Ref: AWS::AccountId
+          - :vpc/
+          - Ref: UnicornVpcF1177F04
+  # idUnicornStoreVPCPublicSubnet1:
+  #   Value:
+  #     Ref: UnicornVpcPublicSubnet1Subnet7A649375
+  #   Export:
+  #     Name: idUnicornStoreVPCPublicSubnet1
+  # idUnicornStoreVPCPublicSubnet2:
+  #   Value:
+  #     Ref: UnicornVpcPublicSubnet2SubnetE8F5102C
+  #   Export:
+  #     Name: idUnicornStoreVPCPublicSubnet2
+  # idUnicornStoreVPCPrivateSubnet1:
+  #   Value:
+  #     Ref: UnicornVpcPrivateSubnet1SubnetDE2F31C6
+  #   Export:
+  #     Name: idUnicornStoreVPCPrivateSubnet1
+  # idUnicornStoreVPCPrivateSubnet2:
+  #   Value:
+  #     Ref: UnicornVpcPrivateSubnet2SubnetCD967545
+  #   Export:
+  #     Name: idUnicornStoreVPCPrivateSubnet2
+  ExportsOutputRefUnicornVpcF1177F049EC4EBDC:
+    Value:
+      Ref: UnicornVpcF1177F04
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcF1177F049EC4EBDC
+  ExportsOutputRefUnicornVpcPrivateSubnet1SubnetDE2F31C654D2CE4E:
+    Value:
+      Ref: UnicornVpcPrivateSubnet1SubnetDE2F31C6
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcPrivateSubnet1SubnetDE2F31C654D2CE4E
+  ExportsOutputRefUnicornVpcPrivateSubnet2SubnetCD9675458475C365:
+    Value:
+      Ref: UnicornVpcPrivateSubnet2SubnetCD967545
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcPrivateSubnet2SubnetCD9675458475C365
+  ExportsOutputRefUnicornVpcPublicSubnet1Subnet7A649375489553F1:
+    Value:
+      Ref: UnicornVpcPublicSubnet1Subnet7A649375
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcPublicSubnet1Subnet7A649375489553F1
+  ExportsOutputRefUnicornVpcPublicSubnet2SubnetE8F5102C67C36638:
+    Value:
+      Ref: UnicornVpcPublicSubnet2SubnetE8F5102C
+    Export:
+      Name: UnicornStoreVpc:ExportsOutputRefUnicornVpcPublicSubnet2SubnetE8F5102C67C36638
+  Cloud9IDE:
+    Value:
+      Fn::Join:
+        - ''
+        - - https://
+          - Ref: AWS::Region
+          - ".console.aws.amazon.com/cloud9/ide/"
+          - Ref: C9Instance
+          - "?region="
+          - Ref: AWS::Region
+Description: Cloud9 For Java on AWS Workshop
+Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names
+    Type: String
+    Default: "java-on-aws"
+  C9InstanceType:
+    Description: Example Cloud9 instance type
+    Type: String
+    Default: t3.large
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+    ConstraintDescription: Must be a valid Cloud9 instance type
+    #  OwnerArn:
+    #    Type: String
+    #    Description: The Arn of the Cloud9 Owner.
+  C9InstanceVolumeSize:
+    Type: Number
+    Description: The Size in GB of the Cloud9 Instance Volume.
+    Default: 30
