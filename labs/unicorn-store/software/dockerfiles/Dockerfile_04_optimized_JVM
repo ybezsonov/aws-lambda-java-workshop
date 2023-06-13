@@ -1,36 +1,40 @@
-FROM public.ecr.aws/lts/ubuntu:22.04 AS builder
+FROM maven:3-amazoncorretto-17 as builder
+RUN yum install -y unzip
 
-RUN apt-get update --fix-missing && apt-get install zip curl -y
-
-RUN \
-    curl -s "https://get.sdkman.io" | bash; \
-    bash -c "source $HOME/.sdkman/bin/sdkman-init.sh; \
-    sdk install java 17.0.6-amzn; \
-    sdk install maven;"
+RUN ls -la /etc/alternatives/java
 
 COPY ./pom.xml ./pom.xml
+RUN mvn dependency:go-offline -f ./pom.xml
+
 COPY src ./src/
+RUN mvn clean package 
+RUN ls -la target
+RUN mv target/store-spring-1.0.0.jar target/store-spring.jar && cd target && unzip store-spring.jar
 
-ENV MAVEN_OPTS='-Xmx6g'
-
-RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && mvn -Dmaven.test.skip=true clean package && cd target && unzip store-spring-1.0.0.jar"
-
-RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && jdeps --ignore-missing-deps \
+RUN jdeps --ignore-missing-deps \
     --multi-release 17 --print-module-deps \
     --class-path="target/BOOT-INF/lib/*" \
-    --module-path="target/BOOT-INF/lib/*" \
-    target/store-spring-1.0.0.jar > jre-deps.info"
+    target/store-spring.jar > jre-deps.info
 
-RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh && export JAVA_TOOL_OPTIONS=\"-Djdk.lang.Process.launchMechanism=vfork\" && \
+# Adding jdk.crypto.ec for TLS 1.3 support  
+RUN truncate --size -1 jre-deps.info
+RUN echo ",jdk.crypto.ec" >> jre-deps.info && cat jre-deps.info
+
+RUN export JAVA_TOOL_OPTIONS=\"-Djdk.lang.Process.launchMechanism=vfork\" && \
     jlink --verbose --compress 2 --strip-java-debug-attributes \
     --no-header-files --no-man-pages --output custom-jre \
-    --add-modules $(cat jre-deps.info)"
+    --add-modules $(cat jre-deps.info)
 
-FROM public.ecr.aws/lts/ubuntu:22.04
-RUN addgroup --system spring && adduser --system spring --ingroup spring
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023
+RUN yum install -y shadow-utils
 
-COPY --from=builder target/store-spring-1.0.0.jar store-spring.jar
+COPY --from=builder target/store-spring.jar store-spring.jar
 COPY --from=builder custom-jre custom-jre
+
+RUN groupadd --system spring 
+RUN adduser spring -g spring 
+
+USER spring:spring
 
 # OpenTelemetry agent configuration
 ENV OTEL_TRACES_SAMPLER "always_on"
@@ -39,7 +43,5 @@ ENV OTEL_RESOURCE_ATTRIBUTES "service.name=unicorn-store-spring"
 ENV OTEL_IMR_EXPORT_INTERVAL "10000"
 ENV OTEL_EXPORTER_OTLP_ENDPOINT "http://localhost:4317"
 
-USER spring:spring
-
 EXPOSE 8080
-CMD ["./custom-jre/bin/java","-jar","-Dserver.port=8080","/store-spring.jar"]
+ENTRYPOINT ["./custom-jre/bin/java","-jar","-Dserver.port=8080","/store-spring.jar"]
