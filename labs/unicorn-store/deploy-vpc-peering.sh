@@ -10,20 +10,20 @@ export VPC_PEERING_ID=$(aws ec2 create-vpc-peering-connection --vpc-id $CLOUD9_V
 aws ec2 accept-vpc-peering-connection --vpc-peering-connection-id $VPC_PEERING_ID --output text
 
 export CLOUD9_ROUTE_TABLE_ID=$(aws ec2 describe-route-tables \
---filters "Name=vpc-id,Values=$CLOUD9_VPC_ID" "Name=association.main,Values=true" \
+--filters "Name=vpc-id,Values=$CLOUD9_VPC_ID" "Name=tag:Name,Values=java-on-aws Public Routes" \
 --query 'RouteTables[0].RouteTableId' --output text)
 
 export UNICORN_DB_ROUTE_TABLE_ID_1=$(aws ec2 describe-route-tables \
---filters "Name=vpc-id,Values=$UNICORN_VPC_ID" "Name=tag:Name,Values=UnicornStoreInfrastructure/UnicornVpc/PrivateSubnet1" \
+--filters "Name=vpc-id,Values=$UNICORN_VPC_ID" "Name=tag:Name,Values=UnicornStoreVpc/UnicornVpc/PrivateSubnet1" \
 --query 'RouteTables[0].RouteTableId' --output text)
 export UNICORN_DB_ROUTE_TABLE_ID_2=$(aws ec2 describe-route-tables \
---filters "Name=vpc-id,Values=$UNICORN_VPC_ID" "Name=tag:Name,Values=UnicornStoreInfrastructure/UnicornVpc/PrivateSubnet2" \
+--filters "Name=vpc-id,Values=$UNICORN_VPC_ID" "Name=tag:Name,Values=UnicornStoreVpc/UnicornVpc/PrivateSubnet2" \
 --query 'RouteTables[0].RouteTableId' --output text)
 
 aws ec2 create-route --route-table-id $CLOUD9_ROUTE_TABLE_ID \
 --destination-cidr-block 10.0.0.0/16 --vpc-peering-connection-id $VPC_PEERING_ID
 
 aws ec2 create-route --route-table-id $UNICORN_DB_ROUTE_TABLE_ID_1 \
---destination-cidr-block 172.31.0.0/16 --vpc-peering-connection-id $VPC_PEERING_ID
+--destination-cidr-block 10.10.0.0/16 --vpc-peering-connection-id $VPC_PEERING_ID
 aws ec2 create-route --route-table-id $UNICORN_DB_ROUTE_TABLE_ID_2 \
---destination-cidr-block 172.31.0.0/16 --vpc-peering-connection-id $VPC_PEERING_ID
+--destination-cidr-block 10.10.0.0/16 --vpc-peering-connection-id $VPC_PEERING_ID

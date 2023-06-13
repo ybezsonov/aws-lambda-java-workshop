@@ -1,5 +1,7 @@
 #bin/sh
 
+aws apprunner delete-vpc-connector --vpc-connector-arn $(aws apprunner list-vpc-connectors  --query "VpcConnectors[?VpcConnectorName == 'unicornstore-vpc-connector'].VpcConnectorArn" --output text) 2>/dev/null
+
 # Build the database setup function
 ./mvnw clean package -f infrastructure/db-setup/pom.xml
 
@@ -12,7 +14,10 @@
 cd infrastructure/cdk
 
 cdk bootstrap
-cdk deploy UnicornStoreInfrastructure --require-approval never --outputs-file target/output.json
+
+cdk deploy UnicornStoreVpc --require-approval never --outputs-file target/output-vpc.json
+
+cdk deploy UnicornStoreInfrastructure --require-approval never --outputs-file target/output-infra.json
 
 # Execute the DB Setup function to create the table
 aws lambda invoke --function-name $(cat target/output.json | jq -r '.UnicornStoreInfrastructure.DbSetupArn') /dev/stdout | cat;
@@ -29,8 +34,6 @@ export UNICORN_SUBNET_PRIVATE_1=$(aws ec2 describe-subnets \
 export UNICORN_SUBNET_PRIVATE_2=$(aws ec2 describe-subnets \
 --filters "Name=vpc-id,Values=$UNICORN_VPC_ID" "Name=tag:Name,Values=UnicornStoreVpc/UnicornVpc/PrivateSubnet2" \
 --query 'Subnets[0].SubnetId' --output text)
-
-aws apprunner delete-vpc-connector --vpc-connector-arn $(aws apprunner list-vpc-connectors  --query "VpcConnectors[?VpcConnectorName == 'unicornstore-vpc-connector'].VpcConnectorArn" --output text) 2>/dev/null
 
 aws apprunner create-vpc-connector --vpc-connector-name unicornstore-vpc-connector \
 --subnets $UNICORN_SUBNET_PRIVATE_1 $UNICORN_SUBNET_PRIVATE_2

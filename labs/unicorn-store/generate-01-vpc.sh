@@ -2,7 +2,7 @@
 
 pushd infrastructure/cdk
 
-YML_FILE=01-vpc
+YML_FILE=vpc
 
 cdk synth UnicornStoreVpc --validation > ../../infrastructure/cfn/$YML_FILE.yml
 

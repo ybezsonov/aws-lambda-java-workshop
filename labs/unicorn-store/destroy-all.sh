@@ -28,9 +28,15 @@ aws codecommit delete-repository --repository-name $GITOPSC_REPO_NAME
 
 cdk destroy UnicornStoreSpringECS --force
 cdk destroy UnicornStoreSpringCI --force
-cdk destroy UnicornStoreInfrastructure --force
 
 aws apprunner delete-vpc-connector --vpc-connector-arn $(aws apprunner list-vpc-connectors  --query "VpcConnectors[?VpcConnectorName == 'unicornstore-vpc-connector'].VpcConnectorArn" --output text)
+
+export CLOUD9_VPC_ID=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$( ip address show dev eth0 | grep ether | awk ' { print $2  } ' )/vpc-id)
+
+aws ec2 delete-vpc-peering-connection --vpc-peering-connection-id $(aws ec2 describe-vpc-peering-connections --filters "Name=requester-vpc-info.vpc-id,Values=$CLOUD9_VPC_ID" --query 'VpcPeeringConnections[0].VpcPeeringConnectionId' --output text)
+
+cdk destroy UnicornStoreInfrastructure --force
+cdk destroy UnicornStoreVpc --force
 
 popd
 date
