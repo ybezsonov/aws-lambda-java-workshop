@@ -11,7 +11,7 @@ aws apprunner delete-vpc-connector --vpc-connector-arn $(aws apprunner list-vpc-
 ./mvnw clean package -f software/alternatives/unicorn-store-micronaut/pom.xml
 
 # Deploy the infrastructure
-cd infrastructure/cdk
+pushd infrastructure/cdk
 
 cdk bootstrap
 
@@ -20,7 +20,9 @@ cdk deploy UnicornStoreVpc --require-approval never --outputs-file target/output
 cdk deploy UnicornStoreInfrastructure --require-approval never --outputs-file target/output-infra.json
 
 # Execute the DB Setup function to create the table
-aws lambda invoke --function-name $(cat target/output.json | jq -r '.UnicornStoreInfrastructure.DbSetupArn') /dev/stdout | cat;
+aws lambda invoke --function-name $(cat target/output-infra.json | jq -r '.UnicornStoreInfrastructure.DbSetupArn') /dev/stdout | cat;
+
+popd
 
 ./deploy-vpc-connector.sh
 
