@@ -63,22 +63,11 @@ cd ~/environment/aws-java-workshop/labs/unicorn-store
 
 ## go to home directory
 cd ~/environment
-# rm -vf ${HOME}/.aws/credentials
-# export C9_ENV_ID=$(aws cloud9 describe-environments --environment-ids $(aws cloud9 list-environments --output json | jq -r '[.environmentIds[]] | join(" ")') --query "environments[?name == 'java-on-aws-workshop'].id" --output text)
-# echo "Cloud9 environment ID: $C9_ENV_ID"
 
-# aws cloud9 update-environment --environment-id $C9_ENV_ID --managed-credentials-action DISABLE
-# rm -vf ${HOME}/.aws/credentials
-
-echo "Cloud9 environment ID: $C9_PID"
-aws cloud9 update-environment  --environment-id $C9_PID --managed-credentials-action DISABLE
-# rm -vf ${HOME}/.aws/credentials
-
-# export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
-# export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
-# echo "export ACCOUNT_ID=${ACCOUNT_ID}" | tee -a ~/.bash_profile
-# echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
-# aws configure set default.region ${AWS_REGION}
-# aws configure get default.region
-# test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
-# aws sts get-caller-identity --query Arn | grep java-on-aws-workshop-admin -q && echo "IAM role is valid" || echo "IAM role is NOT valid"
+export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
+export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
+echo "export ACCOUNT_ID=${ACCOUNT_ID}" | tee -a ~/.bash_profile
+echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
+aws configure set default.region ${AWS_REGION}
+aws configure get default.region
+test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
