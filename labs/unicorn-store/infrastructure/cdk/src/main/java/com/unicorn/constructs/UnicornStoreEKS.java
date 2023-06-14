@@ -70,7 +70,7 @@ public class UnicornStoreEKS extends Construct {
                 FromRoleArnOptions.builder().mutable(false).build());
         // Cloud9 EC2 instance role to manage EKS cluster via kubectl
         IRole workshopAdminRole = Role.fromRoleArn(scope, projectName + "-workshop-admin-role",
-                "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/workshop-admin",
+                "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/java-on-aws-workshop-admin",
                 FromRoleArnOptions.builder().mutable(false).build());
 
         // Give Admin access to the cluster

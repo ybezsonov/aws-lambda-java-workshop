@@ -286,21 +286,22 @@ Resources:
 
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AWSCloud9Administrator
       Path: "/"
 
-      Policies:
-        - PolicyName:
-            Fn::Join:
-              - ''
-              - - C9InstanceDenyPolicy-
-                - Ref: AWS::Region
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Deny
-                Action:
-                  - cloud9:UpdateEnvironment
-                Resource: "*"
+      # Policies:
+      #   - PolicyName:
+      #       Fn::Join:
+      #         - ''
+      #         - - C9InstanceDenyPolicy-
+      #           - Ref: AWS::Region
+      #     PolicyDocument:
+      #       Version: '2012-10-17'
+      #       Statement:
+      #         - Effect: Deny
+      #           Action:
+      #             - cloud9:UpdateEnvironment
+      #           Resource: "*"
 
   C9LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -348,6 +349,10 @@ Resources:
                 Action:
                   - ec2:DescribeInstances
                   - ec2:DescribeIamInstanceProfileAssociations
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - cloud9:*
                 Resource: "*"
               - Effect: Allow
                 Action:
@@ -448,6 +453,11 @@ Resources:
                       response = ec2.associate_iam_instance_profile(IamInstanceProfile=iam_instance_profile, InstanceId=instance['InstanceId'])
                       logger.info('response - associate_iam_instance_profile: {}'.format(response))
                       #r_ec2 = boto3.resource('ec2')
+
+                      # cloud9 = boto3.client('cloud9')
+                      # responseList = cloud9.list_environments()
+                      # response = client.create_environment_membership(environmentId=responseList['environmentIds'][0], userArn='string', permissions='owner')
+                      # responseCloud9 = cloud9.update_environment(environmentId=responseList['environmentIds'][0], name='java-on-aws-workshop', description='AWS Cloud9 instance for java-on-aws', managedCredentialsAction='DISABLE')
 
                       responseData = {'Success': 'Started bootstrapping for instance: '+instance['InstanceId']}
                       cfnresponse.send(event, context, cfnresponse.SUCCESS, responseData, 'CustomResourcePhysicalID')
@@ -570,11 +580,20 @@ Resources:
       InstanceType:
         Ref: C9InstanceType
       Name: java-on-aws-workshop
+      # OwnerArn:
+      #   Fn::GetAtt:
+      #     - C9LambdaExecutionRole
+      #     - Arn
       # OwnerArn: !Join
       #   - ''
       #   - - 'arn:aws:iam::'
       #     - !Ref "AWS::AccountId"
       #     - ':assumed-role/WSParticipantRole/Participant'
+      # OwnerArn: !Join
+      #   - ''
+      #   - - 'arn:aws:iam::'
+      #     - !Ref "AWS::AccountId"
+      #     - ':role/java-on-aws-workshop-admin'
       Tags:
         -
           Key: SSMBootstrap
