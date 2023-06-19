@@ -5,6 +5,7 @@ import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CfnOutputProps;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
+import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.codebuild.PipelineProject;
 import software.amazon.awscdk.services.codebuild.BuildSpec;
@@ -30,20 +31,26 @@ public class UnicornStoreCI extends Construct {
             InfrastructureStack infrastructureStack, final String projectName) {
         super(scope, id);
 
-        software.amazon.awscdk.services.codecommit.Repository codeCommit =
-                software.amazon.awscdk.services.codecommit.Repository.Builder
-                        .create(scope, projectName + "-codecommt").repositoryName(projectName)
-                        .build();
-        codeCommit.applyRemovalPolicy(RemovalPolicy.DESTROY);
+        // software.amazon.awscdk.services.codecommit.Repository codeCommit =
+        //         software.amazon.awscdk.services.codecommit.Repository.Builder
+        //                 .create(scope, projectName + "-codecommt").repositoryName(projectName)
+        //                 .build();
+        // codeCommit.applyRemovalPolicy(RemovalPolicy.DESTROY);
+
+        software.amazon.awscdk.services.codecommit.IRepository codeCommit =
+                software.amazon.awscdk.services.codecommit.Repository.fromRepositoryName(scope, projectName + "-codecommt", projectName);
 
         new CfnOutput(scope, "UnicornStoreCodeCommitURL",
                 CfnOutputProps.builder().value(codeCommit.getRepositoryCloneUrlHttp()).build());
         new CfnOutput(scope, "arnUnicornStoreCodeCommit",
                 CfnOutputProps.builder().value(codeCommit.getRepositoryArn()).build());
 
-        Repository ecr =
-                Repository.Builder.create(scope, projectName + "-ecr").repositoryName(projectName)
-                        .imageScanOnPush(false).removalPolicy(RemovalPolicy.DESTROY).build();
+        // Repository ecr =
+        //         Repository.Builder.create(scope, projectName + "-ecr").repositoryName(projectName)
+        //                 .imageScanOnPush(false).removalPolicy(RemovalPolicy.DESTROY).build();
+
+        IRepository ecr = Repository.fromRepositoryName(scope, projectName + "-ecr", projectName);
+
         new CfnOutput(scope, "UnicornStoreEcrRepositoryURL",
                 CfnOutputProps.builder().value(ecr.getRepositoryUri()).build());
         new CfnOutput(scope, "UnicornStoreEcrRepositoryName",
@@ -66,13 +73,8 @@ public class UnicornStoreCI extends Construct {
                                 .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4).build())
                         .environmentVariables(Map.of("ECR_URI",
                                 BuildEnvironmentVariable.builder().value(ecrUri).build(),
-                                // "IMAGE_NAME",
-                                // BuildEnvironmentVariable.builder().value(imageName).build(),
                                 "IMAGE_ARCH",
-                                BuildEnvironmentVariable.builder().value("amd64").build(),
-                                "AWS_DEFAULT_REGION",
-                                BuildEnvironmentVariable.builder()
-                                        .value(infrastructureStack.getRegion()).build()))
+                                BuildEnvironmentVariable.builder().value("amd64").build()))
                         .timeout(Duration.minutes(60)).build();
         PipelineProject codeBuildArm64 =
                 PipelineProject.Builder.create(scope, projectName + "-codebuild-build-arm64")
@@ -81,16 +83,11 @@ public class UnicornStoreCI extends Construct {
                         .vpc(infrastructureStack.getVpc())
                         .environment(BuildEnvironment
                                 .builder().privileged(true).computeType(ComputeType.LARGE)
-                                .buildImage(LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_2_0).build())
+                                .buildImage(LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0).build())
                         .environmentVariables(Map.of("ECR_URI",
                                 BuildEnvironmentVariable.builder().value(ecrUri).build(),
-                                // "IMAGE_NAME",
-                                // BuildEnvironmentVariable.builder().value(imageName).build(),
                                 "IMAGE_ARCH",
-                                BuildEnvironmentVariable.builder().value("arm64").build(),
-                                "AWS_DEFAULT_REGION",
-                                BuildEnvironmentVariable.builder()
-                                        .value(infrastructureStack.getRegion()).build()))
+                                BuildEnvironmentVariable.builder().value("arm64").build()))
                         .timeout(Duration.minutes(60)).build();
         PipelineProject codeBuildManifest =
                 PipelineProject.Builder.create(scope, projectName + "-codebuild-build-manifest")
@@ -101,12 +98,7 @@ public class UnicornStoreCI extends Construct {
                                 .builder().privileged(true).computeType(ComputeType.SMALL)
                                 .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4).build())
                         .environmentVariables(Map.of("ECR_URI",
-                                BuildEnvironmentVariable.builder().value(ecrUri).build(),
-                                // "IMAGE_NAME",
-                                // BuildEnvironmentVariable.builder().value(imageName).build(),
-                                "AWS_DEFAULT_REGION",
-                                BuildEnvironmentVariable.builder()
-                                        .value(infrastructureStack.getRegion()).build()))
+                                BuildEnvironmentVariable.builder().value(ecrUri).build()))
                         .timeout(Duration.minutes(60)).build();
         // Alternative approaches for multi-architecture Docker images with buildx
         // PipelineProject codeBuild =
