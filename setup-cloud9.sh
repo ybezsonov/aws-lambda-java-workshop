@@ -61,6 +61,8 @@ cd ~/environment/aws-java-workshop/labs/unicorn-store
 ./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml
 ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-micronaut/pom.xml
 
+cd ~/environment
+
 ## eksctl
 # for ARM systems, set ARCH to: `arm64`, `armv6` or `armv7`
 ARCH=amd64
@@ -78,15 +80,18 @@ curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.25.6/2023-01-30/bin/linu
 chmod +x ./kubectl
 mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
 echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
-kubectl version --short --client
+kubectl version --output=yaml
 
 # install Flux
-cd ~/environment
 curl -s https://fluxcd.io/install.sh | sudo bash
 
-## go to home directory
-cd ~/environment
+# install Helm
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+helm version
 
+cd ~/environment
 export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
 export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
 echo "export ACCOUNT_ID=${ACCOUNT_ID}" | tee -a ~/.bash_profile

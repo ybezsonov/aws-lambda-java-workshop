@@ -35,8 +35,6 @@ spec:
                   optional: false
             - name: SPRING_DATASOURCE_URL
               value: ${SPRING_DATASOURCE_URL}
-            - name: S3_REGION
-              value: ${S3_REGION}
           ports:
             - containerPort: 8080
         # - name: otel

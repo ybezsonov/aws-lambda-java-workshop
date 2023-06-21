@@ -16,6 +16,8 @@ flux uninstall --silent
 pushd infrastructure/cdk
 cdk destroy UnicornStoreSpringEKS --force
 
+eksctl delete cluster --name unicorn-store-spring
+
 export GITOPS_USER=unicorn-store-spring-gitops
 export GITOPSC_REPO_NAME=unicorn-store-spring-gitops
 export CC_POLICY_ARN=$(aws iam list-policies --query 'Policies[?PolicyName==`AWSCodeCommitPowerUser`].{ARN:Arn}' --output text)

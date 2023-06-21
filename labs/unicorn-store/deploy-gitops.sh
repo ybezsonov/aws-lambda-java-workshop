@@ -1,5 +1,8 @@
 #bin/sh
 
+pushd ../../..
+cd ~/environment
+
 export GITOPS_USER=unicorn-store-spring-gitops
 export GITOPSC_REPO_NAME=unicorn-store-spring-gitops
 export CC_POLICY_ARN=$(aws iam list-policies --query 'Policies[?PolicyName==`AWSCodeCommitPowerUser`].{ARN:Arn}' --output text)
@@ -38,12 +41,8 @@ git clone ${GITOPS_REPO_URL}
 rsync -av ~/environment/aws-java-workshop/labs/unicorn-store/gitops/ "${GITOPS_REPO_URL##*/}"
 cd "${GITOPS_REPO_URL##*/}"
 
-export S3_REGION=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
-  --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksAwsRegion`].OutputValue' --output text)
-export SPRING_DATASOURCE_URL=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
-  --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksDatabaseJDBCConnectionString`].OutputValue' --output text)
-export ECR_URI=$(aws cloudformation describe-stacks --stack-name UnicornStoreSpringEKS \
-  --query 'Stacks[0].Outputs[?OutputKey==`UnicornStoreEksRepositoryUri`].OutputValue' --output text)
+export SPRING_DATASOURCE_URL=$(aws ssm get-parameter --name databaseJDBCConnectionString | jq --raw-output '.Parameter.Value')
+export ECR_URI=$(aws ecr describe-repositories --repository-names unicorn-store-spring | jq --raw-output '.repositories[0].repositoryUri')
 export imagepolicy=\$imagepolicy
 
 envsubst < ./apps/deployment.yaml > ./apps/deployment_new.yaml
