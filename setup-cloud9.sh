@@ -61,6 +61,29 @@ cd ~/environment/aws-java-workshop/labs/unicorn-store
 ./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml
 ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-micronaut/pom.xml
 
+## eksctl
+# for ARM systems, set ARCH to: `arm64`, `armv6` or `armv7`
+ARCH=amd64
+PLATFORM=$(uname -s)_$ARCH
+curl -sLO "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+# (Optional) Verify checksum
+curl -sL "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATFORM | sha256sum --check
+tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+sudo mv /tmp/eksctl /usr/local/bin
+eksctl version
+
+## kubectl
+# https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
+curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.25.6/2023-01-30/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
+echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
+kubectl version --short --client
+
+# install Flux
+cd ~/environment
+curl -s https://fluxcd.io/install.sh | sudo bash
+
 ## go to home directory
 cd ~/environment
 

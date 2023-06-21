@@ -27,3 +27,24 @@ popd
 ./deploy-vpc-connector.sh
 
 ./deploy-vpc-peering.sh
+
+./deploy-vpc-env-vars.sh
+
+# Copy the Spring Boot Java Application source code to your local directory
+cd ~/environment
+mkdir unicorn-store-spring
+
+rsync -av aws-java-workshop/labs/unicorn-store/software/unicorn-store-spring/ unicorn-store-spring --exclude target
+cp -R aws-java-workshop/labs/unicorn-store/software/dockerfiles unicorn-store-spring
+cp -R aws-java-workshop/labs/unicorn-store/software/maven unicorn-store-spring
+echo "target" > unicorn-store-spring/.gitignore
+
+# Verify that we have Java 17 and Maven already installed:
+
+java --version
+mvn --version
+
+# Navigate to the application folder and build the application via Maven:
+
+cd ~/environment/unicorn-store-spring
+mvn dependency:go-offline -f ./pom.xml
