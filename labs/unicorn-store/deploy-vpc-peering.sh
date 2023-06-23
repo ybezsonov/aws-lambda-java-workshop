@@ -7,6 +7,9 @@ export CLOUD9_VPC_ID=$(curl -s http://169.254.169.254/latest/meta-data/network/i
 export VPC_PEERING_ID=$(aws ec2 create-vpc-peering-connection --vpc-id $CLOUD9_VPC_ID \
 --peer-vpc-id $UNICORN_VPC_ID \
 --query 'VpcPeeringConnection.VpcPeeringConnectionId' --output text)
+
+sleep 5
+
 aws ec2 accept-vpc-peering-connection --vpc-peering-connection-id $VPC_PEERING_ID --output text
 
 export CLOUD9_ROUTE_TABLE_ID=$(aws ec2 describe-route-tables \
