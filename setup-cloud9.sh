@@ -58,9 +58,9 @@ java -version
 ## Pre-Download Maven dependencies for Unicorn Store
 cd ~/environment/aws-java-workshop/labs/unicorn-store
 ./mvnw dependency:go-offline -f infrastructure/db-setup/pom.xml 1> /dev/null
-# ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-basic/pom.xml
-# ./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml
-# ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-micronaut/pom.xml
+./mvnw dependency:go-offline -f software/alternatives/unicorn-store-basic/pom.xml 1> /dev/null
+./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml 1> /dev/null
+./mvnw dependency:go-offline -f software/alternatives/unicorn-store-micronaut/pom.xml 1> /dev/null
 
 cd ~/environment
 
