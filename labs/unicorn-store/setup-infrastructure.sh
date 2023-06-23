@@ -40,6 +40,10 @@ aws codecommit create-repository --repository-name unicorn-store-spring --reposi
 # create Amazon ECR for images
 aws ecr create-repository --repository-name unicorn-store-spring
 
+export ECR_URI=$(aws ecr describe-repositories --repository-names unicorn-store-spring | jq --raw-output '.repositories[0].repositoryUri')
+echo "export ECR_URI=${ECR_URI}" | tee -a ~/.bash_profile
+echo "export ECR_URI=${ECR_URI}" >> ~/.bashrc
+
 # Navigate to the application folder and download dependencies via Maven:
 cd ~/environment/unicorn-store-spring
 mvn dependency:go-offline -f ./pom.xml 1> /dev/null
