@@ -71,8 +71,9 @@ public class UnicornStoreECS extends Construct {
                 ApplicationLoadBalancedFargateService.Builder.create(scope, projectName + "-ecs")
                         .cluster(cluster).serviceName(projectName).memoryLimitMiB(2048).cpu(1024)
                         .runtimePlatform(
-                                RuntimePlatform.builder().cpuArchitecture(CpuArchitecture.ARM64)
-                                        // .cpuArchitecture(CpuArchitecture.X86_64)
+                                RuntimePlatform.builder()
+                                        // .cpuArchitecture(CpuArchitecture.ARM64)
+                                        .cpuArchitecture(CpuArchitecture.X86_64)
                                         .operatingSystemFamily(OperatingSystemFamily.LINUX).build())
                         .desiredCount(1)
                         .taskImageOptions(ApplicationLoadBalancedTaskImageOptions.builder()
