@@ -55,15 +55,6 @@ sudo update-alternatives --set javac /usr/lib/jvm/java-17-amazon-corretto.x86_64
 export JAVA_HOME=/usr/lib/jvm/java-17-amazon-corretto.x86_64
 java -version
 
-## Pre-Download Maven dependencies for Unicorn Store
-cd ~/environment/aws-java-workshop/labs/unicorn-store
-./mvnw dependency:go-offline -f infrastructure/db-setup/pom.xml 1> /dev/null
-./mvnw dependency:go-offline -f software/alternatives/unicorn-store-basic/pom.xml 1> /dev/null
-./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml 1> /dev/null
-./mvnw dependency:go-offline -f software/alternatives/unicorn-store-micronaut/pom.xml 1> /dev/null
-
-cd ~/environment
-
 ## eksctl
 # for ARM systems, set ARCH to: `arm64`, `armv6` or `armv7`
 ARCH=amd64
@@ -92,6 +83,13 @@ chmod 700 get_helm.sh
 ./get_helm.sh
 helm version
 
+## Pre-Download Maven dependencies for Unicorn Store
+cd ~/environment/aws-java-workshop/labs/unicorn-store
+./mvnw dependency:go-offline -f infrastructure/db-setup/pom.xml 1> /dev/null
+# ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-basic/pom.xml 1> /dev/null
+./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml 1> /dev/null
+# ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-micronaut/pom.xml 1> /dev/null
+
 cd ~/environment
 export ACCOUNT_ID=$(aws sts get-caller-identity --output text --query Account)
 export AWS_REGION=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.region')
@@ -100,5 +98,7 @@ echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
 aws configure set default.region ${AWS_REGION}
 aws configure get default.region
 test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
+
+cd ~/environment
 
 echo "FINISHED: setup-cloud9"

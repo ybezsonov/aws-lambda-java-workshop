@@ -1,8 +1,8 @@
 package com.unicorn;
 
-import com.unicorn.constructs.UnicornStoreBasic;
-import com.unicorn.constructs.UnicornStoreMicronaut;
-import com.unicorn.constructs.UnicornStoreSpringNative;
+// import com.unicorn.constructs.UnicornStoreBasic;
+// import com.unicorn.constructs.UnicornStoreMicronaut;
+// import com.unicorn.constructs.UnicornStoreSpringNative;
 import com.unicorn.core.InfrastructureStack;
 import software.amazon.awscdk.*;
 import software.amazon.awscdk.services.apigateway.LambdaRestApi;
@@ -36,10 +36,10 @@ public class UnicornStoreStack extends Stack {
         //Setup a Proxy-Rest API to access the Spring Lambda function
         var restApi = setupRestApi(unicornStoreSpringLambda);
 
-        //Alternative Solutions with No-Framework (Basic) & Micronaut
-        new UnicornStoreMicronaut(this, "UnicornStoreMicronaut", infrastructureStack);
-        new UnicornStoreBasic(this, "UnicornStoreBasic", infrastructureStack);
-        new UnicornStoreSpringNative(this, "UnicornStoreSpringNative", infrastructureStack);
+        // //Alternative Solutions with No-Framework (Basic) & Micronaut
+        // new UnicornStoreMicronaut(this, "UnicornStoreMicronaut", infrastructureStack);
+        // new UnicornStoreBasic(this, "UnicornStoreBasic", infrastructureStack);
+        // new UnicornStoreSpringNative(this, "UnicornStoreSpringNative", infrastructureStack);
 
         //Create output values for later reference
         new CfnOutput(this, "unicorn-store-spring-function-arn", CfnOutputProps.builder()
