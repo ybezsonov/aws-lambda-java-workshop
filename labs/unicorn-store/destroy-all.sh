@@ -37,6 +37,9 @@ export CLOUD9_VPC_ID=$(curl -s http://169.254.169.254/latest/meta-data/network/i
 
 aws ec2 delete-vpc-peering-connection --vpc-peering-connection-id $(aws ec2 describe-vpc-peering-connections --filters "Name=requester-vpc-info.vpc-id,Values=$CLOUD9_VPC_ID" --query 'VpcPeeringConnections[0].VpcPeeringConnectionId' --output text)
 
+aws codecommit delete-repository --repository-name unicorn-store-spring
+aws ecr delete-repository --repository-name unicorn-store-spring
+
 cdk destroy UnicornStoreInfrastructure --force
 cdk destroy UnicornStoreVpc --force
 

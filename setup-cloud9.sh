@@ -17,6 +17,7 @@ sudo mv $MVN_FOLDERNAME /usr/lib/maven
 export M2_HOME=/usr/lib/maven
 export PATH=${PATH}:${M2_HOME}/bin
 sudo ln -s /usr/lib/maven/bin/mvn /usr/local/bin
+mvn --version
 
 # Install newer version of AWS SAM CLI
 wget -q https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip
@@ -56,10 +57,10 @@ java -version
 
 ## Pre-Download Maven dependencies for Unicorn Store
 cd ~/environment/aws-java-workshop/labs/unicorn-store
-./mvnw dependency:go-offline -f infrastructure/db-setup/pom.xml
-./mvnw dependency:go-offline -f software/alternatives/unicorn-store-basic/pom.xml
-./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml
-./mvnw dependency:go-offline -f software/alternatives/unicorn-store-micronaut/pom.xml
+./mvnw dependency:go-offline -f infrastructure/db-setup/pom.xml 1> /dev/null
+# ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-basic/pom.xml
+# ./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml
+# ./mvnw dependency:go-offline -f software/alternatives/unicorn-store-micronaut/pom.xml
 
 cd ~/environment
 
@@ -99,3 +100,5 @@ echo "export AWS_REGION=${AWS_REGION}" | tee -a ~/.bash_profile
 aws configure set default.region ${AWS_REGION}
 aws configure get default.region
 test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
+
+echo "FINISHED: setup-cloud9"

@@ -1,22 +1,18 @@
 #bin/sh
 
-aws apprunner delete-vpc-connector --vpc-connector-arn $(aws apprunner list-vpc-connectors  --query "VpcConnectors[?VpcConnectorName == 'unicornstore-vpc-connector'].VpcConnectorArn" --output text) 2>/dev/null
-
 # Build the database setup function
-./mvnw clean package -f infrastructure/db-setup/pom.xml
+./mvnw clean package -f infrastructure/db-setup/pom.xml 1> /dev/null
 
 # Build the unicorn application
-./mvnw clean package -f software/alternatives/unicorn-store-basic/pom.xml
-./mvnw clean package -f software/unicorn-store-spring/pom.xml
-./mvnw clean package -f software/alternatives/unicorn-store-micronaut/pom.xml
+# ./mvnw clean package -f software/alternatives/unicorn-store-basic/pom.xml
+# ./mvnw clean package -f software/unicorn-store-spring/pom.xml
+# ./mvnw clean package -f software/alternatives/unicorn-store-micronaut/pom.xml
 
 # Deploy the infrastructure
 pushd infrastructure/cdk
 
 cdk bootstrap
-
 cdk deploy UnicornStoreVpc --require-approval never --outputs-file target/output-vpc.json
-
 cdk deploy UnicornStoreInfrastructure --require-approval never --outputs-file target/output-infra.json
 
 # Execute the DB Setup function to create the table
@@ -24,11 +20,10 @@ aws lambda invoke --function-name $(cat target/output-infra.json | jq -r '.Unico
 
 popd
 
-./deploy-vpc-connector.sh
-
-./deploy-vpc-peering.sh
-
 ./deploy-vpc-env-vars.sh
+source ~/.bashrc
+./deploy-vpc-connector.sh
+./deploy-vpc-peering.sh
 
 # Copy the Spring Boot Java Application source code to your local directory
 cd ~/environment
@@ -39,12 +34,14 @@ cp -R aws-java-workshop/labs/unicorn-store/software/dockerfiles unicorn-store-sp
 cp -R aws-java-workshop/labs/unicorn-store/software/maven unicorn-store-spring
 echo "target" > unicorn-store-spring/.gitignore
 
-# Verify that we have Java 17 and Maven already installed:
+# create AWS CodeCommit for Java Sources
+aws codecommit create-repository --repository-name unicorn-store-spring --repository-description "Java application sources"
 
-java --version
-mvn --version
+# create Amazon ECR for images
+aws ecr create-repository --repository-name unicorn-store-spring
 
-# Navigate to the application folder and build the application via Maven:
-
+# Navigate to the application folder and download dependencies via Maven:
 cd ~/environment/unicorn-store-spring
-mvn dependency:go-offline -f ./pom.xml
+mvn dependency:go-offline -f ./pom.xml 1> /dev/null
+
+echo "FINISHED: setup-infrastructure"
