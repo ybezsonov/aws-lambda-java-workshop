@@ -10,13 +10,19 @@ cd ~/environment/aws-java-workshop/labs/unicorn-store
 for x in `aws ecr list-images --repository-name unicorn-store-spring --query 'imageIds[*][imageDigest]' --output text`; do aws ecr batch-delete-image --repository-name unicorn-store-spring --image-ids imageDigest=$x; done
 for x in `aws ecr list-images --repository-name unicorn-store-spring --query 'imageIds[*][imageDigest]' --output text`; do aws ecr batch-delete-image --repository-name unicorn-store-spring --image-ids imageDigest=$x; done
 
-kubectl delete namespace unicorn-store-spring
 flux uninstall --silent
+kubectl delete deployment unicorn-store-spring -n unicorn-store-spring
+kubectl delete service unicorn-store-spring -n unicorn-store-spring
+kubectl delete sa unicorn-store-spring -n unicorn-store-spring
+kubectl delete namespace unicorn-store-spring
 
 pushd infrastructure/cdk
 cdk destroy UnicornStoreSpringEKS --force
 
 eksctl delete cluster --name unicorn-store-spring
+
+aws elbv2 delete-load-balancer --load-balancer-arn $(aws elbv2 describe-load-balancers --query 'LoadBalancers[?LoadBalancerName==`unicorn-store-spring`].LoadBalancerArn' --output text)
+aws elbv2 delete-target-group --target-group-arn $(aws elbv2 describe-target-groups --query 'TargetGroups[?TargetGroupName==`unicorn-store-spring`].TargetGroupArn' --output text)
 
 export GITOPS_USER=unicorn-store-spring-gitops
 export GITOPSC_REPO_NAME=unicorn-store-spring-gitops
@@ -31,6 +37,10 @@ aws codecommit delete-repository --repository-name $GITOPSC_REPO_NAME
 cdk destroy UnicornStoreSpringECS --force
 cdk destroy UnicornStoreSpringCI --force
 
+aws cloudformation delete-stack --stack-name $(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE --query 'StackSummaries[?contains(StackName,`ECS-Console-V2-Service-unicorn-store-spring-unicorn-store-spring`)==`true`].StackName' --output text)
+aws cloudformation delete-stack --stack-name $(aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE --query 'StackSummaries[?contains(StackName,`Infra-ECS-Cluster-unicorn-store-spring`)==`true`].StackName' --output text)
+
+aws apprunner delete-service --service-arn $(aws apprunner list-services --query 'ServiceSummaryList[?ServiceName==`uss-app-env-dev-uss-svc`].ServiceArn' --output text)
 aws apprunner delete-vpc-connector --vpc-connector-arn $(aws apprunner list-vpc-connectors  --query "VpcConnectors[?VpcConnectorName == 'unicornstore-vpc-connector'].VpcConnectorArn" --output text)
 
 export CLOUD9_VPC_ID=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$( ip address show dev eth0 | grep ether | awk ' { print $2  } ' )/vpc-id)
@@ -40,8 +50,19 @@ aws ec2 delete-vpc-peering-connection --vpc-peering-connection-id $(aws ec2 desc
 aws codecommit delete-repository --repository-name unicorn-store-spring
 aws ecr delete-repository --repository-name unicorn-store-spring
 
+aws codebuild delete-project --name unicorn-store-spring-build-ecr-x86_64
+aws codebuild delete-project --name unicorn-store-spring-deploy-ecs
+
+aws codepipeline delete-pipeline --name unicorn-store-spring-pipeline-build-ecr
+aws codepipeline delete-pipeline --name unicorn-store-spring-deploy-ecs
+
+aws ecs delete-service --cluster unicorn-store-spring --service unicorn-store-spring --force 1> /dev/null
+aws ecs delete-cluster --cluster unicorn-store-spring 1> /dev/null
+
 cdk destroy UnicornStoreInfrastructure --force
 cdk destroy UnicornStoreVpc --force
+
+# TODO: delete IAM roles, policies, etc.
 
 popd
 date
