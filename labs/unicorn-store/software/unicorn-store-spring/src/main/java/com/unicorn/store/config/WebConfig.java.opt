@@ -11,11 +11,14 @@ import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.contrib.awsxray.AwsXrayIdGenerator;
 import io.opentelemetry.contrib.awsxray.propagator.AwsXrayPropagator;
+import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.instrumentation.awssdk.v2_2.AwsSdkTelemetry;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.metrics.SdkMeterProvider;
+import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -50,14 +53,19 @@ public class WebConfig implements WebMvcConfigurer {
         // Extract OpenTelemetry variables
         AttributesBuilder builder = Attributes.builder();
         // https://opentelemetry.io/docs/reference/specification/resource/sdk/#specifying-resource-information-via-an-environment-variable
-        Arrays.stream(System.getenv("OTEL_RESOURCE_ATTRIBUTES")
-                        .split(","))
-                .map( pair -> pair.split("=") )
-                .map( keyValue -> Attributes.of(AttributeKey.stringKey(keyValue[0]), keyValue[1]))
-                .forEach(builder::putAll);
+        if (System.getenv("OTEL_RESOURCE_ATTRIBUTES") != null) {
+            Arrays
+                    .stream(System.getenv("OTEL_RESOURCE_ATTRIBUTES").split(","))
+                    .map(pair -> pair.split("="))
+                    .map(keyValue -> Attributes.of(AttributeKey.stringKey(keyValue[0]), keyValue[1]))
+                    .forEach(builder::putAll);
+        }
         // https://opentelemetry.io/docs/concepts/sdk-configuration/otlp-exporter-configuration/#otel_exporter_otlp_endpoint
         String exporterEndpoint = System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT");
-
+        if (exporterEndpoint == null){
+            exporterEndpoint = "http://localhost:4317";
+        }
+        
         Resource resource = Resource.getDefault().merge(
                 Resource.create(builder.build()));
         return OpenTelemetrySdk.builder()
@@ -79,6 +87,10 @@ public class WebConfig implements WebMvcConfigurer {
                                         ).build())
                                 .setIdGenerator(AwsXrayIdGenerator.getInstance())
                                 .build())
+                .setMeterProvider(SdkMeterProvider.builder()
+                      .registerMetricReader(PeriodicMetricReader.builder(OtlpGrpcMetricExporter.builder().setEndpoint(exporterEndpoint).build()).build())
+                      .setResource(resource)
+                      .build())
                 .buildAndRegisterGlobal();
     }
 
@@ -149,9 +161,8 @@ public class WebConfig implements WebMvcConfigurer {
     public FilterRegistrationBean<ApplicationFilter> filterRegistrationBean(MetricEmitter metricEmitter) {
         FilterRegistrationBean<ApplicationFilter> filterBean = new FilterRegistrationBean<>();
         filterBean.setFilter(new ApplicationFilter(metricEmitter));
-        filterBean.setUrlPatterns(Arrays.asList("/api"));
+        filterBean.setUrlPatterns(Arrays.asList("/unicorns"));
         return filterBean;
     }
 
 }
-
