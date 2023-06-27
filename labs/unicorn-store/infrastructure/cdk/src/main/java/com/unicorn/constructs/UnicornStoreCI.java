@@ -73,8 +73,8 @@ public class UnicornStoreCI extends Construct {
                                 .buildImage(LinuxBuildImage.AMAZON_LINUX_2_4).build())
                         .environmentVariables(Map.of("ECR_URI",
                                 BuildEnvironmentVariable.builder().value(ecrUri).build(),
-                                "IMAGE_ARCH",
-                                BuildEnvironmentVariable.builder().value("amd64").build()))
+                                "IMAGE_TAG",
+                                BuildEnvironmentVariable.builder().value("latest-amd64").build()))
                         .timeout(Duration.minutes(60)).build();
         PipelineProject codeBuildArm64 =
                 PipelineProject.Builder.create(scope, projectName + "-codebuild-build-arm64")
@@ -86,8 +86,8 @@ public class UnicornStoreCI extends Construct {
                                 .buildImage(LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0).build())
                         .environmentVariables(Map.of("ECR_URI",
                                 BuildEnvironmentVariable.builder().value(ecrUri).build(),
-                                "IMAGE_ARCH",
-                                BuildEnvironmentVariable.builder().value("arm64").build()))
+                                "IMAGE_TAG",
+                                BuildEnvironmentVariable.builder().value("latest-arm64").build()))
                         .timeout(Duration.minutes(60)).build();
         PipelineProject codeBuildManifest =
                 PipelineProject.Builder.create(scope, projectName + "-codebuild-build-manifest")
