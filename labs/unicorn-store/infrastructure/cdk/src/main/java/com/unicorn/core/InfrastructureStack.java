@@ -21,6 +21,7 @@ import software.amazon.awscdk.services.ssm.*;
 import software.amazon.awscdk.services.secretsmanager.*;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
+import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.constructs.Construct;
 
 import java.util.List;
@@ -126,6 +127,10 @@ public class InfrastructureStack extends Stack {
         getSecretPassword().grantRead(unicornStoreEscRole);
         getParamJdbsc().grantRead(unicornStoreApprunnerRole);
         getParamJdbsc().grantRead(unicornStoreEscRole);
+
+        unicornStoreEscRole.addManagedPolicy(ManagedPolicy.fromManagedPolicyArn(this,
+                "unicorn-store-spring" + "AmazonECSTaskExecutionRolePolicy",
+                "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"));
     }
 
     private EventBus createEventBus() {
