@@ -112,25 +112,31 @@ public class InfrastructureStack extends Stack {
             .resources(List.of("*"))
             .build());
 
-        Role unicornStoreEscRole = Role.Builder.create(this, "unicornstore-ecs-role")
-            .roleName("unicornstore-ecs-role")
+        Role unicornStoreEscTaskRole = Role.Builder.create(this, "unicornstore-ecs-task-role")
+            .roleName("unicornstore-ecs-task-role")
             .assumedBy(new ServicePrincipal("ecs-tasks.amazonaws.com")).build();
 
-        unicornStoreEscRole.addToPolicy(PolicyStatement.Builder.create()
+        unicornStoreEscTaskRole.addToPolicy(PolicyStatement.Builder.create()
             .actions(List.of("xray:PutTraceSegments"))
             .resources(List.of("*"))
             .build());
 
-        getEventBridge().grantPutEventsTo(unicornStoreApprunnerRole);
-        getEventBridge().grantPutEventsTo(unicornStoreEscRole);
-        getSecretPassword().grantRead(unicornStoreApprunnerRole);
-        getSecretPassword().grantRead(unicornStoreEscRole);
-        getParamJdbsc().grantRead(unicornStoreApprunnerRole);
-        getParamJdbsc().grantRead(unicornStoreEscRole);
+        Role unicornStoreEscTaskExecutionRole = Role.Builder.create(this, "unicornstore-ecs-task-execution-role")
+            .roleName("unicornstore-ecs-task-execution-role")
+            .assumedBy(new ServicePrincipal("ecs-tasks.amazonaws.com")).build();
 
-        unicornStoreEscRole.addManagedPolicy(ManagedPolicy.fromManagedPolicyArn(this,
-                "unicorn-store-spring" + "AmazonECSTaskExecutionRolePolicy",
-                "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"));
+        unicornStoreEscTaskExecutionRole.addManagedPolicy(ManagedPolicy.fromManagedPolicyArn(this,
+            "unicorn-store-spring-" + "AmazonECSTaskExecutionRolePolicy",
+            "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"));
+
+        getEventBridge().grantPutEventsTo(unicornStoreApprunnerRole);
+        getEventBridge().grantPutEventsTo(unicornStoreEscTaskRole);
+        getSecretPassword().grantRead(unicornStoreApprunnerRole);
+        getSecretPassword().grantRead(unicornStoreEscTaskRole);
+        getSecretPassword().grantRead(unicornStoreEscTaskExecutionRole);
+        getParamJdbsc().grantRead(unicornStoreApprunnerRole);
+        getParamJdbsc().grantRead(unicornStoreEscTaskRole);
+        getParamJdbsc().grantRead(unicornStoreEscTaskExecutionRole);
     }
 
     private EventBus createEventBus() {
