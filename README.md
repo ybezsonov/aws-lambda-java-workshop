@@ -1,7 +1,5 @@
 # Java on AWS Immersion Day
 
-# Java on AWS Immersion Day
-
 This project contains the code for the Java on AWS Immersion Day.
 You can find the content and instructions for the Immersion Day [here](https://catalog.workshops.aws/java-on-aws-immersion-day).
 
