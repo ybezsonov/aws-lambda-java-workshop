@@ -4,9 +4,7 @@
 ./mvnw clean package -f infrastructure/db-setup/pom.xml 1> /dev/null
 
 # Build the unicorn application
-# ./mvnw clean package -f software/alternatives/unicorn-store-basic/pom.xml 1> /dev/null
 ./mvnw clean package -f software/unicorn-store-spring/pom.xml 1> /dev/null
-# ./mvnw clean package -f software/alternatives/unicorn-store-micronaut/pom.xml 1> /dev/null
 
 # Deploy the infrastructure
 pushd infrastructure/cdk
@@ -20,10 +18,10 @@ aws lambda invoke --function-name $(cat target/output-infra.json | jq -r '.Unico
 
 popd
 
-./deploy-vpc-env-vars.sh
+./setup-vpc-env-vars.sh
 source ~/.bashrc
-./deploy-vpc-connector.sh
-./deploy-vpc-peering.sh
+./setup-vpc-connector.sh
+./setup-vpc-peering.sh
 
 # Copy the Spring Boot Java Application source code to your local directory
 cd ~/environment
