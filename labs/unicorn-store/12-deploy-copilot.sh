@@ -1,6 +1,6 @@
 #bin/sh
 
-cd ~/environment/unicorn-store-spring
+pushd ~/environment/unicorn-store-spring
 # uss=unicorn-store-spring - long app/service names may cause problems
 export COPILOT_APP=uss-app
 export COPILOT_SVC=uss-svc
@@ -75,3 +75,4 @@ copilot svc deploy --name $COPILOT_SVC --app $COPILOT_APP --env $COPILOT_ENV
 export SVC_URL=$(copilot svc show --name $COPILOT_SVC --json | jq -r '.routes[0].url')
 echo $SVC_URL
 
+popd

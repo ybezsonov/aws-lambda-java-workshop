@@ -16,7 +16,7 @@ kubectl delete service unicorn-store-spring -n unicorn-store-spring
 kubectl delete sa unicorn-store-spring -n unicorn-store-spring
 kubectl delete namespace unicorn-store-spring
 
-pushd infrastructure/cdk
+pushd ~/environment/java-on-aws/labs/unicorn-store/infrastructure/cdk
 cdk destroy UnicornStoreSpringEKS --force
 
 eksctl delete cluster --name unicorn-store-spring

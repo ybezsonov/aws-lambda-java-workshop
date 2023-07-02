@@ -56,7 +56,7 @@ public class UnicornStoreEKS extends Construct {
                 .clusterLogging(Arrays.asList(ClusterLoggingTypes.API, ClusterLoggingTypes.AUDIT,
                         ClusterLoggingTypes.AUTHENTICATOR, ClusterLoggingTypes.CONTROLLER_MANAGER,
                         ClusterLoggingTypes.SCHEDULER))
-                .version(KubernetesVersion.of("1.25"))
+                .version(KubernetesVersion.of("1.27"))
                 .kubectlLayer(new KubectlV25Layer(scope, projectName + "-cluster-kubectl-layer"))
                 .albController(
                         AlbControllerOptions.builder().version(AlbControllerVersion.V2_4_1).build())
@@ -72,32 +72,38 @@ public class UnicornStoreEKS extends Construct {
         IRole workshopAdminRole = Role.fromRoleArn(scope, projectName + "-workshop-admin-role",
                 "arn:aws:iam::" + infrastructureStack.getAccount() + ":role/java-on-aws-workshop-admin",
                 FromRoleArnOptions.builder().mutable(false).build());
+        // Workshop Studio role to manage EKS cluster via UI
+        IRole workshopStudioRole = Role.fromRoleArn(scope, projectName + "-workshop-studio-role",
+                "arn:aws:iam::" + infrastructureStack.getAccount() + ":assumed-role/WSParticipantRole/Participant",
+                FromRoleArnOptions.builder().mutable(false).build());
 
         // Give Admin access to the cluster
         cluster.getAwsAuth().addRoleMapping(adminRole,
                 AwsAuthMapping.builder().groups(List.of("system:masters")).build());
         cluster.getAwsAuth().addRoleMapping(workshopAdminRole,
                 AwsAuthMapping.builder().groups(List.of("system:masters")).build());
+        cluster.getAwsAuth().addRoleMapping(workshopStudioRole,
+                AwsAuthMapping.builder().groups(List.of("system:masters")).build());
 
-        // default node group is ARM64
-        // Application can use
-        // nodeSelector:
-        // kubernetes.io/arch: "arm64"
-        cluster.addNodegroupCapacity("managed-node-group-arm64",
-                NodegroupOptions.builder().nodegroupName("managed-node-group-arm64")
-                        .capacityType(CapacityType.ON_DEMAND)
-                        .instanceTypes(List.of(new InstanceType("m6g.large"))).minSize(1)
-                        .desiredSize(2).maxSize(4).build());
-
-        // Additional x86_x64 Managed Node Group
+        // default node group is x86_64 Managed Node Group
         // Application can use
         // nodeSelector:
         // kubernetes.io/arch: "amd64"
-        // cluster.addNodegroupCapacity("managed-node-group-x64",
-        // NodegroupOptions.builder().nodegroupName("managed-node-group-x64")
-        // .capacityType(CapacityType.ON_DEMAND)
-        // .instanceTypes(List.of(new InstanceType("m5.large"))).minSize(0)
-        // .desiredSize(0).maxSize(2).build());
+        cluster.addNodegroupCapacity("managed-node-group-x64",
+                NodegroupOptions.builder().nodegroupName("managed-node-group-x64")
+                        .capacityType(CapacityType.ON_DEMAND)
+                        .instanceTypes(List.of(new InstanceType("m5.large"))).minSize(0)
+                        .desiredSize(2).maxSize(4).build());
+
+        // Additional node group is ARM64
+        // Application can use
+        // nodeSelector:
+        // kubernetes.io/arch: "arm64"
+        // cluster.addNodegroupCapacity("managed-node-group-arm64",
+        //         NodegroupOptions.builder().nodegroupName("managed-node-group-arm64")
+        //                 .capacityType(CapacityType.ON_DEMAND)
+        //                 .instanceTypes(List.of(new InstanceType("m6g.large"))).minSize(1)
+        //                 .desiredSize(2).maxSize(4).build());
 
         // EKS on Fargate doesn't support ARM64. Can be used for x86_x64 workloads
         // new UnicornStoreEKSaddFargate(this, projectName + "-fargate-profile",

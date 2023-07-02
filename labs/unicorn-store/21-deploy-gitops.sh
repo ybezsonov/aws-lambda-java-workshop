@@ -1,7 +1,6 @@
 #bin/sh
 
-pushd ../../..
-cd ~/environment
+pushd ~/environment
 
 export GITOPS_USER=unicorn-store-spring-gitops
 export GITOPSC_REPO_NAME=unicorn-store-spring-gitops
@@ -110,8 +109,6 @@ spec:
     strategy: Setters
 EOF
 
-popd
-
 # flux get kustomization --watch
 # kubectl -n unicorn-store-spring get all
 # kubectl get events -n unicorn-store-spring
@@ -122,3 +119,5 @@ sleep 10
 kubectl wait deployment -n unicorn-store-spring unicorn-store-spring --for condition=Available=True --timeout=120s
 kubectl -n unicorn-store-spring get all
 echo "App URL: http://$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')"
+
+popd
