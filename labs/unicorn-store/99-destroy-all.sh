@@ -5,7 +5,7 @@ start=`date +%s`
 cd ~/environment/unicorn-store-spring
 copilot app delete --yes
 
-cd ~/environment/aws-java-workshop/labs/unicorn-store
+cd ~/environment/java-on-aws/labs/unicorn-store
 
 for x in `aws ecr list-images --repository-name unicorn-store-spring --query 'imageIds[*][imageDigest]' --output text`; do aws ecr batch-delete-image --repository-name unicorn-store-spring --image-ids imageDigest=$x; done
 for x in `aws ecr list-images --repository-name unicorn-store-spring --query 'imageIds[*][imageDigest]' --output text`; do aws ecr batch-delete-image --repository-name unicorn-store-spring --image-ids imageDigest=$x; done

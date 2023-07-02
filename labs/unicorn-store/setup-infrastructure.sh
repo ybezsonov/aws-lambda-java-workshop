@@ -27,9 +27,9 @@ source ~/.bashrc
 cd ~/environment
 mkdir unicorn-store-spring
 
-rsync -av aws-java-workshop/labs/unicorn-store/software/unicorn-store-spring/ unicorn-store-spring --exclude target
-cp -R aws-java-workshop/labs/unicorn-store/software/dockerfiles unicorn-store-spring
-cp -R aws-java-workshop/labs/unicorn-store/software/maven unicorn-store-spring
+rsync -av java-on-aws/labs/unicorn-store/software/unicorn-store-spring/ unicorn-store-spring --exclude target
+cp -R java-on-aws/labs/unicorn-store/software/dockerfiles unicorn-store-spring
+cp -R java-on-aws/labs/unicorn-store/software/maven unicorn-store-spring
 echo "target" > unicorn-store-spring/.gitignore
 
 # create AWS CodeCommit for Java Sources
