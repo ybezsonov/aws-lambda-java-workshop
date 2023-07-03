@@ -587,15 +587,15 @@ Resources:
       InstanceType:
         Ref: C9InstanceType
       Name: java-on-aws-workshop
-      # OwnerArn:
-      #   Fn::GetAtt:
-      #     - C9LambdaExecutionRole
-      #     - Arn
       # OwnerArn: !Join
       #   - ''
       #   - - 'arn:aws:iam::'
       #     - !Ref "AWS::AccountId"
       #     - ':assumed-role/WSParticipantRole/Participant'
+      # OwnerArn:
+      #   Fn::GetAtt:
+      #     - C9LambdaExecutionRole
+      #     - Arn
       # OwnerArn: !Join
       #   - ''
       #   - - 'arn:aws:iam::'
@@ -644,10 +644,14 @@ Outputs:
   PrivateSubnet1:
     Description: A reference to the private subnet in the 1st Availability Zone
     Value: !Ref PrivateSubnet1
+    Export:
+      Name: PrivateSubnetDev1
 
   PrivateSubnet2:
     Description: A reference to the private subnet in the 2nd Availability Zone
     Value: !Ref PrivateSubnet2
+    Export:
+      Name: PrivateSubnetDev2
 
   NoIngressSecurityGroup:
     Description: Security group with no ingress rule
