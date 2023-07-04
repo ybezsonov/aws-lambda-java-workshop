@@ -21,7 +21,7 @@ public class UnicornStoreApp {
         var infrastructureStack = new InfrastructureStack(app, "UnicornStoreInfrastructure",
             StackProps.builder().build(), vpcStack);
 
-        var unicornStoreSpring = new UnicornStoreStack(app, "UnicornStoreSpringApp", StackProps.builder()
+        var unicornStoreLambdaApp = new UnicornStoreLambdaStack(app, "UnicornStoreLambdaApp", StackProps.builder()
                 .build(), infrastructureStack);
 
         var stackName = "UnicornStoreSpring";
@@ -57,11 +57,12 @@ public class UnicornStoreApp {
             new NagPackSuppression.Builder().id("AwsSolutions-SMG4").reason("Ephemeral workshop environment does not need to rotate secrets").build(),
             new NagPackSuppression.Builder().id("AwsSolutions-RDS2").reason("Workshop non-sensitive test database does not need encryption at rest").build(),
             new NagPackSuppression.Builder().id("AwsSolutions-APIG3").reason("Workshop API Gateways do not need AWS WAF assigned" ).build(),
+            new NagPackSuppression.Builder().id("AwsSolutions-S1").reason("Workshop S3 bucket does not need Access Logs" ).build(),
             new NagPackSuppression.Builder().id("AwsSolutions-RDS13").reason("Workshop Database does not need backups" ).build()
         );
 
         NagSuppressions.addStackSuppressions(infrastructureStack, suppression);
-        NagSuppressions.addStackSuppressions(unicornStoreSpring, suppression);
+        NagSuppressions.addStackSuppressions(unicornStoreLambdaApp, suppression);
 
         var suppressionCICD = List.of(
             new NagPackSuppression.Builder().id("AwsSolutions-CB3").reason("CodeBuild uses privileged mode to build docker images" ).build(),
