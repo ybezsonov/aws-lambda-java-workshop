@@ -125,6 +125,11 @@ public class InfrastructureStack extends Stack {
             .roleName("unicornstore-ecs-task-execution-role")
             .assumedBy(new ServicePrincipal("ecs-tasks.amazonaws.com")).build();
 
+        unicornStoreEscTaskExecutionRole.addToPolicy(PolicyStatement.Builder.create()
+            .actions(List.of("logs:CreateLogGroup"))
+            .resources(List.of("*"))
+            .build());
+
         unicornStoreEscTaskExecutionRole.addManagedPolicy(ManagedPolicy.fromManagedPolicyArn(this,
             "unicorn-store-spring-" + "AmazonECSTaskExecutionRolePolicy",
             "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"));
