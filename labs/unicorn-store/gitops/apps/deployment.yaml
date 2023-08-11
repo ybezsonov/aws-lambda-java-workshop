@@ -11,6 +11,8 @@ spec:
     matchLabels:
       app: unicorn-store-spring
   template:
+    securityContext:
+      runAsNonRoot: true
     metadata:
       labels:
         app: unicorn-store-spring
@@ -34,12 +36,14 @@ spec:
                   key: "password"
                   optional: false
             - name: SPRING_DATASOURCE_URL
-              value: ${SPRING_DATASOURCE_URL}
+              value: jdbc:postgresql://unicorninstance.cqsod1juirda.eu-central-1.rds.amazonaws.com:5432/unicorns
           ports:
             - containerPort: 8080
-        # - name: otel
-        #   image: "amazon/aws-otel-collector:latest"
-        #   resources:
-        #     limits:
-        #       cpu: "0.25"
-        #       memory: "0.5Gi"
+          securityContext:
+            allowPrivilegeEscalation: false
+      # - name: otel
+      #   image: "amazon/aws-otel-collector:latest"
+      #   resources:
+      #     limits:
+      #       cpu: "0.25"
+      #       memory: "0.5Gi"
