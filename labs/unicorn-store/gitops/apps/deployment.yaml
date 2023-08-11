@@ -11,8 +11,6 @@ spec:
     matchLabels:
       app: unicorn-store-spring
   template:
-    securityContext:
-      runAsNonRoot: true
     metadata:
       labels:
         app: unicorn-store-spring
@@ -40,6 +38,7 @@ spec:
           ports:
             - containerPort: 8080
           securityContext:
+            runAsNonRoot: true
             allowPrivilegeEscalation: false
       # - name: otel
       #   image: "amazon/aws-otel-collector:latest"
