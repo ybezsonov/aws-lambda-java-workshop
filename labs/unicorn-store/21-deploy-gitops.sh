@@ -56,7 +56,7 @@ apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageRepository
 metadata:
   name: unicorn-store-spring
-  namespace: unicorn-store-spring
+  namespace: flux-system
 spec:
   provider: aws
   interval: 1m
@@ -72,7 +72,7 @@ apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy
 metadata:
   name: unicorn-store-spring
-  namespace: unicorn-store-spring
+  namespace: flux-system
 spec:
   imageRepositoryRef:
     name: unicorn-store-spring
@@ -88,7 +88,7 @@ apiVersion: image.toolkit.fluxcd.io/v1beta1
 kind: ImageUpdateAutomation
 metadata:
   name: unicorn-store-spring
-  namespace: unicorn-store-spring
+  namespace: flux-system
 spec:
   git:
     checkout:
