@@ -1,5 +1,8 @@
 #bin/sh
 
+date
+start=`date +%s`
+
 export UNICORN_VPC_ID=$(aws cloudformation describe-stacks --stack-name UnicornStoreInfrastructure --query 'Stacks[0].Outputs[?OutputKey==`idUnicornStoreVPC`].OutputValue' --output text)
 
 export CLOUD9_VPC_ID=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$( ip address show dev eth0 | grep ether | awk ' { print $2  } ' )/vpc-id)
@@ -30,3 +33,6 @@ aws ec2 create-route --route-table-id $UNICORN_DB_ROUTE_TABLE_ID_1 \
 --destination-cidr-block 10.10.0.0/16 --vpc-peering-connection-id $VPC_PEERING_ID
 aws ec2 create-route --route-table-id $UNICORN_DB_ROUTE_TABLE_ID_2 \
 --destination-cidr-block 10.10.0.0/16 --vpc-peering-connection-id $VPC_PEERING_ID
+
+date
+echo FINISHED: setup-vpc-peering in $(./timediff.sh $start $(date +%s))

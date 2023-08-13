@@ -1,3 +1,8 @@
+#bin/sh
+
+date
+start=`date +%s`
+
 flux_version='2.0.1'
 flux_checksum='bff7a54421a591eaae0c13d1f7bd6420b289dd76d0642cb3701897c9d02c6df7'
 
@@ -119,10 +124,13 @@ test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is 
 
 export C9ID=$(aws cloud9 list-environments --query 'environmentIds[0]' --output text)
 echo C9ID=$C9ID
-aws cloud9 update-environment  --environment-id $C9ID --managed-credentials-action DISABLE
-rm -vf ${HOME}/.aws/credentials
+# aws cloud9 update-environment  --environment-id $C9ID --managed-credentials-action DISABLE
+# rm -vf ${HOME}/.aws/credentials
 aws sts get-caller-identity --query Arn | grep java-on-aws-workshop-admin -q && echo "IAM role is valid" || echo "IAM role is NOT valid"
 
 cd ~/environment
 
-echo "FINISHED: setup-cloud9"
+date
+end=`date +%s`
+runtime=$((end-start))
+echo "FINISHED: setup-cloud9 in $runtime"

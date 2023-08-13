@@ -1,5 +1,8 @@
 #bin/sh
 
+date
+start=`date +%s`
+
 export ECR_URI=$(aws ecr describe-repositories --repository-names unicorn-store-spring | jq --raw-output '.repositories[0].repositoryUri')
 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URI >/dev/null 2>&1
 
@@ -16,7 +19,11 @@ git -C ~/environment/unicorn-store-spring-gitops pull
 flux reconcile source git flux-system
 flux reconcile kustomization apps
 kubectl wait deployment -n unicorn-store-spring unicorn-store-spring --for condition=Available=True --timeout=120s
-sleep 5
 kubectl -n unicorn-store-spring get all
-sleep 5
+
+date
+echo Built and deployed in $(./timediff.sh $start $(date +%s))
+
+sleep 2
+
 kubectl -n unicorn-store-spring logs -f deployment/unicorn-store-spring

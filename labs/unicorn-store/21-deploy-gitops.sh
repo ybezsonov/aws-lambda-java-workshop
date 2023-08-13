@@ -1,5 +1,8 @@
 #bin/sh
 
+date
+start=`date +%s`
+
 pushd ~/environment
 
 export GITOPS_USER=unicorn-store-spring-gitops
@@ -123,3 +126,6 @@ kubectl -n unicorn-store-spring get all
 echo "App URL: http://$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')"
 
 popd
+
+date
+echo FINISHED: deploy-gitops in $(./timediff.sh $start $(date +%s))

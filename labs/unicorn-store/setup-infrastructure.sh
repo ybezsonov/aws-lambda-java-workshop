@@ -1,5 +1,8 @@
 #bin/sh
 
+date
+start=`date +%s`
+
 # Build the database setup function
 ./mvnw clean package -f infrastructure/db-setup/pom.xml 1> /dev/null
 
@@ -18,11 +21,6 @@ cdk deploy UnicornStoreLambdaApp --require-approval never --outputs-file target/
 aws lambda invoke --function-name $(cat target/output-infra.json | jq -r '.UnicornStoreInfrastructure.DbSetupArn') /dev/stdout | cat;
 
 popd
-
-./setup-vpc-env-vars.sh
-source ~/.bashrc
-./setup-vpc-connector.sh
-./setup-vpc-peering.sh
 
 # Copy the Spring Boot Java Application source code to your local directory
 cd ~/environment
@@ -50,4 +48,12 @@ mvn dependency:go-offline -f ./pom.xml 1> /dev/null
 # Resolution for ECS Service Unavailable
 aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
 
-echo "FINISHED: setup-infrastructure"
+date
+echo FINISHED: setup-infrastructure in $(./timediff.sh $start $(date +%s))
+
+# additional modules setup
+./setup-vpc-env-vars.sh
+source ~/.bashrc
+./setup-vpc-connector.sh
+./setup-vpc-peering.sh
+./22-deploy-eks-eksctl.sh
