@@ -6,11 +6,6 @@ start_time=`date +%s`
 init_time=$start_time
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Started" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
-## Resize disk
-start_time=`date +%s`
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/resize-cloud9.sh 50
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "resize-cloud9" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
-
 # Setup Cloud9
 start_time=`date +%s`
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-cloud9.sh
@@ -75,12 +70,12 @@ source ~/.bashrc
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-vpc-peering.sh
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-vpc" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
-# # setup EKS
-# start_time=`date +%s`
-# ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/22-deploy-eks-eksctl.sh
-# ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "eks" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
-# start_time=`date +%s`
-# ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/21-deploy-gitops.sh
-# ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "gitops" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
+# setup EKS
+start_time=`date +%s`
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/22-deploy-eks-eksctl.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "eks" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
+start_time=`date +%s`
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/21-deploy-gitops.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "gitops" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Finished" $init_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)

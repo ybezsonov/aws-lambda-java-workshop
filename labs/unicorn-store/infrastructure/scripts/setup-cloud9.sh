@@ -28,6 +28,11 @@ unzip -q awscliv2.zip
 sudo ./aws/install
 rm awscliv2.zip
 
+## Resize disk
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/resize-cloud9.sh 50
+
+cd /tmp
+
 ## Install Maven
 export MVN_VERSION=3.9.2
 export MVN_FOLDERNAME=apache-maven-${MVN_VERSION}
