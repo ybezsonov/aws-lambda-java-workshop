@@ -131,12 +131,5 @@ spec:
         property: password
 EOF
 
-# install a GitOps  stack and Flux to operate the deployment.
-cd ~/environment/java-on-aws/labs/unicorn-store
-./21-deploy-gitops.sh
-
-export SVC_URL=http://$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')
-echo $SVC_URL
-
 date
 echo FINISHED: deploy-eks-eksctl in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))

@@ -19,11 +19,12 @@ git -C ~/environment/unicorn-store-spring-gitops pull
 flux reconcile source git flux-system
 flux reconcile kustomization apps
 kubectl wait deployment -n unicorn-store-spring unicorn-store-spring --for condition=Available=True --timeout=120s
-kubectl -n unicorn-store-spring get all
+kubectl -n unicorn-store-spring get pods
 
 date
 echo Built and deployed in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))
+echo "App URL: http://$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')"
 
 sleep 2
-
+echo Hit Ctrl+C to stop the logs stream ...
 kubectl -n unicorn-store-spring logs -f deployment/unicorn-store-spring

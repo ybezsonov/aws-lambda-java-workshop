@@ -61,6 +61,7 @@ source ~/.bashrc
 ./setup-vpc-connector.sh
 ./setup-vpc-peering.sh
 ./22-deploy-eks-eksctl.sh
+./21-deploy-gitops.sh
 
 echo FINISHED: setup-additional-modules in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))
 

@@ -121,6 +121,8 @@ flux reconcile source git flux-system -n flux-system
 sleep 10
 flux reconcile kustomization apps -n flux-system
 sleep 10
+git -C ~/environment/unicorn-store-spring-gitops pull
+
 kubectl wait deployment -n unicorn-store-spring unicorn-store-spring --for condition=Available=True --timeout=120s
 kubectl -n unicorn-store-spring get all
 echo "App URL: http://$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')"
