@@ -1,7 +1,5 @@
 #bin/sh
 
-echo $(date '+%Y.%m.%d %H:%M:%S')
-
 cd ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts
 
 start_time=`date +%s`
@@ -19,12 +17,12 @@ start_time=`date +%s`
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-cloud9" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
 start_time=`date +%s`
-cd ~/environment/java-on-aws/labs/unicorn-store/infrastructure
+cd ~/environment/java-on-aws/labs/unicorn-store
 # Build the database setup function
-./mvnw clean package -f infrastructure/db-setup/pom.xml 1> /dev/null
+mvn clean package -f infrastructure/db-setup/pom.xml 1> /dev/null
 
 # Build the unicorn application
-./mvnw clean package -f software/unicorn-store-spring/pom.xml 1> /dev/null
+mvn clean package -f software/unicorn-store-spring/pom.xml 1> /dev/null
 
 # Deploy the infrastructure
 pushd infrastructure/cdk
@@ -69,17 +67,18 @@ aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
 
 # additional modules setup
 start_time=`date +%s`
-cd ~/environment/java-on-aws/labs/unicorn-store
-./setup-vpc-env-vars.sh
+
+cd ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-vpc-env-vars.sh
 source ~/.bashrc
-./setup-vpc-connector.sh
-./setup-vpc-peering.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-vpc-connector.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-vpc-peering.sh
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-vpc" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 start_time=`date +%s`
-./22-deploy-eks-eksctl.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/22-deploy-eks-eksctl.sh
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "eks" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 start_time=`date +%s`
-./21-deploy-gitops.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/21-deploy-gitops.sh
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "gitops" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Finished" $init_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)

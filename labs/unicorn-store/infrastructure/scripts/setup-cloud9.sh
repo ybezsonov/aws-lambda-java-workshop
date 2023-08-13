@@ -103,8 +103,8 @@ helm version
 
 ## Pre-Download Maven dependencies for Unicorn Store
 cd ~/environment/java-on-aws/labs/unicorn-store
-./mvnw dependency:go-offline -f infrastructure/db-setup/pom.xml 1> /dev/null
-./mvnw dependency:go-offline -f software/unicorn-store-spring/pom.xml 1> /dev/null
+mvn dependency:go-offline -f infrastructure/db-setup/pom.xml 1> /dev/null
+mvn dependency:go-offline -f software/unicorn-store-spring/pom.xml 1> /dev/null
 
 git config --global user.email "you@workshops.aws"
 git config --global user.name "Your Name"
@@ -118,8 +118,8 @@ aws configure set default.region ${AWS_REGION}
 aws configure get default.region
 test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is not set
 
-export C9ID=$(aws cloud9 list-environments --query 'environmentIds[0]' --output text)
-echo C9ID=$C9ID
+# export C9ID=$(aws cloud9 list-environments --query 'environmentIds[0]' --output text)
+# echo C9ID=$C9ID
 # aws cloud9 update-environment  --environment-id $C9ID --managed-credentials-action DISABLE
 # rm -vf ${HOME}/.aws/credentials
-aws sts get-caller-identity --query Arn | grep java-on-aws-workshop-admin -q && echo "IAM role is valid" || echo "IAM role is NOT valid"
+# aws sts get-caller-identity --query Arn | grep java-on-aws-workshop-admin -q && echo "IAM role is valid" || echo "IAM role is NOT valid"
