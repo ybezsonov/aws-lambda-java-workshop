@@ -1,7 +1,6 @@
 #bin/sh
 
-date
-start=`date +%s`
+echo $(date '+%Y.%m.%d %H:%M:%S')
 
 export UNICORN_VPC_ID=$(aws cloudformation describe-stacks --stack-name UnicornStoreVpc \
 --query 'Stacks[0].Outputs[?OutputKey==`idUnicornStoreVPC`].OutputValue' --output text)
@@ -38,6 +37,3 @@ aws ec2 create-tags --resources $UNICORN_SUBNET_PRIVATE_1 $UNICORN_SUBNET_PRIVAT
 
 aws ec2 create-tags --resources $UNICORN_SUBNET_PUBLIC_1 $UNICORN_SUBNET_PUBLIC_2 \
 --tags Key=kubernetes.io/cluster/unicorn-store-spring,Value=shared Key=kubernetes.io/role/elb,Value=1
-
-date
-echo FINISHED: setup-vpc-env-vars in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))

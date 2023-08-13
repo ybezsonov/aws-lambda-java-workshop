@@ -1,6 +1,6 @@
 #bin/sh
 
-date
+echo $(date '+%Y.%m.%d %H:%M:%S')
 start=`date +%s`
 
 export ECR_URI=$(aws ecr describe-repositories --repository-names unicorn-store-spring | jq --raw-output '.repositories[0].repositoryUri')

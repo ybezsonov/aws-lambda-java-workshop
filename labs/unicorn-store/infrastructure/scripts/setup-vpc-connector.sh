@@ -1,7 +1,6 @@
 #bin/sh
 
-date
-start=`date +%s`
+echo $(date '+%Y.%m.%d %H:%M:%S')
 
 aws apprunner delete-vpc-connector --vpc-connector-arn $(aws apprunner list-vpc-connectors  --query "VpcConnectors[?VpcConnectorName == 'unicornstore-vpc-connector'].VpcConnectorArn" --output text) 2>/dev/null
 
@@ -18,6 +17,3 @@ export UNICORN_SUBNET_PRIVATE_2=$(aws ec2 describe-subnets \
 
 aws apprunner create-vpc-connector --vpc-connector-name unicornstore-vpc-connector \
 --subnets $UNICORN_SUBNET_PRIVATE_1 $UNICORN_SUBNET_PRIVATE_2
-
-date
-echo FINISHED: setup-vpc-connector in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))

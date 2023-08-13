@@ -1,7 +1,6 @@
 #bin/sh
 
-date
-start=`date +%s`
+echo $(date '+%Y.%m.%d %H:%M:%S')
 
 # Build an image
 export ECR_URI=$(aws ecr describe-repositories --repository-names unicorn-store-spring | jq --raw-output '.repositories[0].repositoryUri')
@@ -130,6 +129,3 @@ spec:
         key: unicornstore-db-secret
         property: password
 EOF
-
-date
-echo FINISHED: deploy-eks-eksctl in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))

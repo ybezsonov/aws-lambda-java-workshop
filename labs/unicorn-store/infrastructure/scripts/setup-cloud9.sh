@@ -1,7 +1,6 @@
 #bin/sh
 
-date
-start=`date +%s`
+echo $(date '+%Y.%m.%d %H:%M:%S')
 
 flux_version='2.0.1'
 flux_checksum='bff7a54421a591eaae0c13d1f7bd6420b289dd76d0642cb3701897c9d02c6df7'
@@ -61,9 +60,6 @@ wget https://github.com/mikefarah/yq/releases/download/v4.33.3/yq_linux_amd64.ta
   tar xz && sudo mv yq_linux_amd64 /usr/bin/yq
 yq --version
 
-## Resize disk
-/home/ec2-user/environment/java-on-aws/labs/resize-cloud9.sh 30
-
 ## Set JDK 17 as default
 sudo yum -y install java-17-amazon-corretto-devel
 sudo update-alternatives --set java /usr/lib/jvm/java-17-amazon-corretto.x86_64/bin/java
@@ -84,7 +80,7 @@ eksctl version
 
 ## kubectl
 # https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
-curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.25.6/2023-01-30/bin/linux/amd64/kubectl
+curl -O https://s3.us-west-2.amazonaws.com/amazon-eks/1.27.1/2023-04-19/bin/linux/amd64/kubectl
 chmod +x ./kubectl
 mkdir -p $HOME/bin && cp ./kubectl $HOME/bin/kubectl && export PATH=$PATH:$HOME/bin
 echo 'export PATH=$PATH:$HOME/bin' >> ~/.bashrc
@@ -127,8 +123,3 @@ echo C9ID=$C9ID
 # aws cloud9 update-environment  --environment-id $C9ID --managed-credentials-action DISABLE
 # rm -vf ${HOME}/.aws/credentials
 aws sts get-caller-identity --query Arn | grep java-on-aws-workshop-admin -q && echo "IAM role is valid" || echo "IAM role is NOT valid"
-
-cd ~/environment
-
-date
-echo FINISHED: setup-cloud9 in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))

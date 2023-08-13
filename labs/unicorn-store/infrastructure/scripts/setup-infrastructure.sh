@@ -1,8 +1,25 @@
 #bin/sh
 
-date
-start=`date +%s`
+echo $(date '+%Y.%m.%d %H:%M:%S')
 
+cd ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts
+
+start_time=`date +%s`
+init_time=$start_time
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Started" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
+
+## Resize disk
+start_time=`date +%s`
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/resize-cloud9.sh 50
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "resize-cloud9" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
+
+# Setup Cloud9
+start_time=`date +%s`
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-cloud9.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-cloud9" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
+
+start_time=`date +%s`
+cd ~/environment/java-on-aws/labs/unicorn-store/infrastructure
 # Build the database setup function
 ./mvnw clean package -f infrastructure/db-setup/pom.xml 1> /dev/null
 
@@ -28,7 +45,7 @@ mkdir unicorn-store-spring
 
 rsync -av java-on-aws/labs/unicorn-store/software/unicorn-store-spring/ unicorn-store-spring --exclude target
 cp -R java-on-aws/labs/unicorn-store/software/dockerfiles unicorn-store-spring
-cp -R java-on-aws/labs/unicorn-store/software/maven unicorn-store-spring
+cp -R java-on-aws/labs/unicorn-store/software/scripts unicorn-store-spring
 echo "target" > unicorn-store-spring/.gitignore
 
 # create AWS CodeCommit for Java Sources
@@ -48,21 +65,21 @@ mvn dependency:go-offline -f ./pom.xml 1> /dev/null
 # Resolution for ECS Service Unavailable
 aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
 
-date
-echo FINISHED: setup-infrastructure in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-infrastructure" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
 # additional modules setup
-date
-start=`date +%s`
-
+start_time=`date +%s`
 cd ~/environment/java-on-aws/labs/unicorn-store
 ./setup-vpc-env-vars.sh
 source ~/.bashrc
 ./setup-vpc-connector.sh
 ./setup-vpc-peering.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-vpc" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
+start_time=`date +%s`
 ./22-deploy-eks-eksctl.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "eks" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
+start_time=`date +%s`
 ./21-deploy-gitops.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "gitops" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
-echo FINISHED: setup-additional-modules in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))
-
-cd ~/environment
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Finished" $init_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
