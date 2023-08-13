@@ -39,7 +39,7 @@ flux bootstrap git \
 
 echo "${GITOPS_REPO_URL}"
 git clone ${GITOPS_REPO_URL}
-rsync -av ~/environment/java-on-aws/labs/unicorn-store/gitops/ "${GITOPS_REPO_URL##*/}"
+rsync -av ~/environment/java-on-aws/labs/unicorn-store/infrastructure/gitops/ "${GITOPS_REPO_URL##*/}"
 cd "${GITOPS_REPO_URL##*/}"
 
 git config pull.rebase true
