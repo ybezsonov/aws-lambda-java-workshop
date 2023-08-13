@@ -128,4 +128,4 @@ echo "App URL: http://$(kubectl get svc unicorn-store-spring -n unicorn-store-sp
 popd
 
 date
-echo FINISHED: deploy-gitops in $(./timediff.sh $start $(date +%s))
+echo FINISHED: deploy-gitops in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))

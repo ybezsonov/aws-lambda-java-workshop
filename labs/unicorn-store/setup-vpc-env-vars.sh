@@ -40,4 +40,4 @@ aws ec2 create-tags --resources $UNICORN_SUBNET_PUBLIC_1 $UNICORN_SUBNET_PUBLIC_
 --tags Key=kubernetes.io/cluster/unicorn-store-spring,Value=shared Key=kubernetes.io/role/elb,Value=1
 
 date
-echo FINISHED: setup-vpc-env-vars in $(./timediff.sh $start $(date +%s))
+echo FINISHED: setup-vpc-env-vars in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))

@@ -139,4 +139,4 @@ export SVC_URL=http://$(kubectl get svc unicorn-store-spring -n unicorn-store-sp
 echo $SVC_URL
 
 date
-echo FINISHED: deploy-eks-eksctl in $(./timediff.sh $start $(date +%s))
+echo FINISHED: deploy-eks-eksctl in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))

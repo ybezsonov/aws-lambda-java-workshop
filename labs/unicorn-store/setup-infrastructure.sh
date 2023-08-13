@@ -49,11 +49,19 @@ mvn dependency:go-offline -f ./pom.xml 1> /dev/null
 aws iam create-service-linked-role --aws-service-name ecs.amazonaws.com
 
 date
-echo FINISHED: setup-infrastructure in $(./timediff.sh $start $(date +%s))
+echo FINISHED: setup-infrastructure in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))
 
 # additional modules setup
+date
+start=`date +%s`
+
+cd ~/environment/java-on-aws/labs/unicorn-store
 ./setup-vpc-env-vars.sh
 source ~/.bashrc
 ./setup-vpc-connector.sh
 ./setup-vpc-peering.sh
 ./22-deploy-eks-eksctl.sh
+
+echo FINISHED: setup-additional-modules in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))
+
+cd ~/environment

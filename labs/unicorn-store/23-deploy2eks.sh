@@ -22,7 +22,7 @@ kubectl wait deployment -n unicorn-store-spring unicorn-store-spring --for condi
 kubectl -n unicorn-store-spring get all
 
 date
-echo Built and deployed in $(./timediff.sh $start $(date +%s))
+echo Built and deployed in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))
 
 sleep 2
 

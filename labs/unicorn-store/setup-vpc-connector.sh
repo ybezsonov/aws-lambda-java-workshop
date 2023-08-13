@@ -20,4 +20,4 @@ aws apprunner create-vpc-connector --vpc-connector-name unicornstore-vpc-connect
 --subnets $UNICORN_SUBNET_PRIVATE_1 $UNICORN_SUBNET_PRIVATE_2
 
 date
-echo FINISHED: setup-vpc-connector in $(./timediff.sh $start $(date +%s))
+echo FINISHED: setup-vpc-connector in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))

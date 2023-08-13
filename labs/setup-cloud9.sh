@@ -131,6 +131,4 @@ aws sts get-caller-identity --query Arn | grep java-on-aws-workshop-admin -q && 
 cd ~/environment
 
 date
-end=`date +%s`
-runtime=$((end-start))
-echo "FINISHED: setup-cloud9 in $runtime"
+echo FINISHED: setup-cloud9 in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))
