@@ -22,7 +22,7 @@ kubectl wait deployment -n unicorn-store-spring unicorn-store-spring --for condi
 kubectl -n unicorn-store-spring get pods
 
 date
-echo Built and deployed in $(~/environment/java-on-aws/labs/unicorn-store/timediff.sh $start $(date +%s))
+echo Built and deployed in $(~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timediff.sh $start $(date +%s))
 echo "App URL: http://$(kubectl get svc unicorn-store-spring -n unicorn-store-spring -o json | jq --raw-output '.status.loadBalancer.ingress[0].hostname')"
 
 sleep 2
