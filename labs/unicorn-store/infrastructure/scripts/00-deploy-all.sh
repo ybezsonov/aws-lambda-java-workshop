@@ -1,4 +1,5 @@
 #bin/sh
+
 echo $(date '+%Y.%m.%d %H:%M:%S')
 start_time=`date +%s`
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Started" $start_time
