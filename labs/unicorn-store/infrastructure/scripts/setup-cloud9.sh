@@ -1,6 +1,8 @@
 #bin/sh
 
-echo $(date '+%Y.%m.%d %H:%M:%S')
+start_time=`date +%s`
+export init_time=$start_time
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Started" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
 flux_version='2.0.1'
 flux_checksum='bff7a54421a591eaae0c13d1f7bd6420b289dd76d0642cb3701897c9d02c6df7'
@@ -128,3 +130,5 @@ test -n "$AWS_REGION" && echo AWS_REGION is "$AWS_REGION" || echo AWS_REGION is 
 # aws cloud9 update-environment  --environment-id $C9ID --managed-credentials-action DISABLE
 # rm -vf ${HOME}/.aws/credentials
 # aws sts get-caller-identity --query Arn | grep java-on-aws-workshop-admin -q && echo "IAM role is valid" || echo "IAM role is NOT valid"
+
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-cloud9" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)

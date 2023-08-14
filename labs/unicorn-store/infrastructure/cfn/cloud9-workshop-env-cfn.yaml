@@ -541,8 +541,12 @@ Resources:
                 - . /home/ec2-user/.bashrc
                 - echo '=== Clone Git repository ==='
                 - sudo -H -u ec2-user bash -c "git clone https://github.com/ybezsonov/aws-lambda-java-workshop.git /home/ec2-user/environment/java-on-aws/"
+                - echo '=== Setup Cloud9 ==='
+                - sudo -H -i -u ec2-user bash -c "/home/ec2-user/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-cloud9.sh &>> /home/ec2-user/setup-cloud9.log"
                 - echo '=== Setup Infrastructure components ==='
-                - sudo -H -i -u ec2-user bash -c "cd /home/ec2-user/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts && ./setup-infrastructure.sh &>> /home/ec2-user/setup-infra.log"
+                - sudo -H -i -u ec2-user bash -c "/home/ec2-user/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-infrastructure.sh &>> /home/ec2-user/setup-infra.log"
+                - echo '=== Setup Additional Modules ==='
+                - sudo -H -i -u ec2-user bash -c "/home/ec2-user/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-modules.sh &>> /home/ec2-user/setup-modules.log"
                 - echo '=== Install cfn-signal and report status ==='
                 - yum update -y aws-cfn-bootstrap
                 - if [ "$?" -ne 0 ]; then export BOOTSTRAP_RESULT=false; else export BOOTSTRAP_RESULT=true; fi

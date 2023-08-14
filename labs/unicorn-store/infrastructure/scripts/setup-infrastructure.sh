@@ -1,17 +1,8 @@
 #bin/sh
 
-cd ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts
-
+echo $(date '+%Y.%m.%d %H:%M:%S')
 start_time=`date +%s`
-init_time=$start_time
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Started" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
-# Setup Cloud9
-start_time=`date +%s`
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-cloud9.sh
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-cloud9" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
-
-start_time=`date +%s`
 cd ~/environment/java-on-aws/labs/unicorn-store
 # Build the database setup function
 mvn clean package -f infrastructure/db-setup/pom.xml 1> /dev/null
@@ -69,13 +60,3 @@ source ~/.bashrc
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-vpc-connector.sh
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-vpc-peering.sh
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-vpc" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
-
-# setup EKS
-start_time=`date +%s`
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/deploy-eks-eksctl.sh
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "eks" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
-start_time=`date +%s`
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/deploy-gitops.sh
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "gitops" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
-
-~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Finished" $init_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
