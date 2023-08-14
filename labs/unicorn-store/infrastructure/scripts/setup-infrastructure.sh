@@ -70,12 +70,12 @@ source ~/.bashrc
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/setup-vpc-peering.sh
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "setup-vpc" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
-# # setup EKS
-# start_time=`date +%s`
-# ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/22-deploy-eks-eksctl.sh
-# ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "eks" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
-# start_time=`date +%s`
-# ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/21-deploy-gitops.sh
-# ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "gitops" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
+# setup EKS
+start_time=`date +%s`
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/deploy-eks-eksctl.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "eks" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
+start_time=`date +%s`
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/deploy-gitops.sh
+~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "gitops" $start_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
 
 ~/environment/java-on-aws/labs/unicorn-store/infrastructure/scripts/timeprint.sh "Finished" $init_time 2>&1 | tee >(cat >> /home/ec2-user/setup-timing.log)
