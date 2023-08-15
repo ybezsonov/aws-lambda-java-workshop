@@ -5,75 +5,19 @@
 
 version: 2
 updates:
-  # - package-ecosystem: maven
-  #   directory: "/labs/unicorn-store/software/alternatives/unicorn-store-basic"
-  #   schedule:
-  #     interval: "weekly"
-  #   ignore: # needs manual GraalVM config updates (reflect-config)
-  #     - dependency-name: "software.amazon.awssdk:*"
-  #       versions:
-  #         - "> 2.17.282"
+  - package-ecosystem: maven
+    directory: "/labs/unicorn-store/infrastructure/cdk" 
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: maven
+    directory: "/labs/unicorn-store/infrastructure/db-setup" 
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: docker
+    directory: "/labs/unicorn-store/software/dockerfiles"
+    schedule:
+      interval: "monthly"
   - package-ecosystem: maven
     directory: "/labs/unicorn-store/software/unicorn-store-spring"
     schedule:
-      interval: "weekly"
-    ignore: # needs manual GraalVM config updates (reflect-config)
-      - dependency-name: "software.amazon.awssdk:*"
-        versions:
-          - "> 2.17.282"
-  # - package-ecosystem: maven
-  #   directory: "/labs/unicorn-store/software/alternatives/unicorn-store-spring-native-graalvm"
-  #   schedule:
-  #     interval: "weekly"
-  #   ignore: # needs manual GraalVM config updates (reflect-config)
-  #     - dependency-name: "software.amazon.awssdk:*"
-  #       versions:
-  #         - "> 2.17.282"
-  # - package-ecosystem: maven
-  #   directory: "/labs/unicorn-store/software/alternatives/unicorn-store-micronaut"
-  #   schedule:
-  #     interval: "weekly"
-  #   ignore: # needs manual GraalVM config updates (reflect-config)
-  #     - dependency-name: "software.amazon.awssdk:*"
-  #       versions:
-  #         - "> 2.17.282"
-  - package-ecosystem: maven
-    directory: "/labs/unicorn-store/infrastructure/cdk"
-    schedule:
-      interval: "weekly"
-  - package-ecosystem: maven
-    directory: "/labs/unicorn-store/infrastructure/db-setup"
-    schedule:
-      interval: "weekly"
-  # - package-ecosystem: maven
-  #   directory: "/labs/unicorn-location-api/UnicornLocationFunction" 
-  #   schedule:
-  #     interval: "weekly"
-  #   ignore: # needs manual GraalVM config updates (reflect-config)
-  #     - dependency-name: "software.amazon.awssdk:*"
-  #       versions:
-  #         - "> 2.17.282"
-  # - package-ecosystem: maven
-  #   directory: "/labs/unicorn-location-api/final/unicorn-location-api-final/UnicornLocationFunction" 
-  #   schedule:
-  #     interval: "weekly"
-  #   ignore: # needs manual GraalVM config updates (reflect-config)
-  #     - dependency-name: "software.amazon.awssdk:*"
-  #       versions:
-  #         - "> 2.17.282"
-  # - package-ecosystem: maven
-  #   directory: "/labs/unicorn-stock-broker"
-  #   schedule:
-  #     interval: "weekly"
-  # - package-ecosystem: docker
-  #   directory: "/labs/unicorn-store/software/alternatives/unicorn-store-spring-native-graalvm"
-  #   schedule:
-  #     interval: "weekly"
-  # - package-ecosystem: docker
-  #   directory: "/labs/unicorn-location-api/graal"
-  #   schedule:
-  #     interval: "weekly"
-  # - package-ecosystem: docker
-  #   directory: "/labs/unicorn-location-api/final/unicorn-location-api-final"
-  #   schedule:
-  #     interval: "weekly"
+      interval: "monthly"
